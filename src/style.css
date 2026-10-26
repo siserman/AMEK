@@ -28,6 +28,7 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
+html { overflow: hidden; }
 body {
   background: var(--petrol-ink);
   color: var(--on-dark);
