@@ -38,5 +38,7 @@ export function buildWorld(renderer, data, { shadowSize = 4096 } = {}) {
   const ctx = { scene, col, data, ps, atlas, tagAtlas };
   const store = buildStore(ctx);
   const exterior = buildExterior(ctx);
-  return { scene, sun, hemi, col, atlas, tagAtlas, ps, store, exterior };
+  // base light levels; the graphics level scales them (see engine/graphics.js)
+  const light = { hemi: hemi.intensity, sun: sun.intensity, env: scene.environmentIntensity, balance: { hemi: 1, sun: 1, env: 1 } };
+  return { scene, sun, hemi, light, col, atlas, tagAtlas, ps, store, exterior };
 }

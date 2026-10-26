@@ -55,6 +55,21 @@ The panel shows the day so far (customers served, revenue, average receipt,
 queue, open tills, waiting time, how full the shelves are, the car park, staff on
 duty), customers per hour, revenue per day, and a ticker of what just happened.
 
+### Graphics
+
+Two levels, chosen on the start screen (also in the pause menu and the watch
+panel; the browser remembers the choice, `?gfx=low|high` overrides it).
+Phones and tablets start on **Einfach**, everything else on **Hoch**.
+
+- **Einfach:** straight rendering with MSAA, one shadow map over the whole site.
+- **Hoch:** ambient occlusion (GTAO, so packs sit in their shelves and corners
+  and undersides darken), bloom for lamps, shop windows and headlights after
+  dark, SMAA edges, a physical sky (Preetham) lit by the simulation's real sun
+  (dusk turns the sky mauve, at night it goes dark), a shadow map that follows
+  what you look at so shadows stay sharp up close, and a light balance with
+  more sun and less flat sky fill. All of it is three.js r180's own addons,
+  vendored in `vendor/addons/`; no other dependency.
+
 ## v0.1 (2026-10-26): what's in
 
 - **Arriving:** a street, an access road with the AMEK pylon, a 36-bay car park
@@ -123,7 +138,8 @@ Plain ES modules on three.js (vendored in `vendor/`, r180, MIT).
 src/
   main.js            boot, render loop
   data.js            loads the assortment, expands flavour variants, prices in cents
-  engine/            input (keys, mouse, touch), synthesised audio, 2D collision
+  engine/            input (keys, mouse, touch), synthesised audio, 2D collision,
+                     graphics levels (post-processing, sky, shadow fitting)
   world/             layout, store shell & tills, fixtures + planogram, car park,
                      product atlas (package art + price tags), product templates,
                      models (cart, car, people)
@@ -137,6 +153,7 @@ data/                sortiment.json, einkaufszettel.json
 tests/smoke.mjs      plays the whole trip headless and checks the receipt
 tests/sim.mjs        runs the market for a week and checks every day closes the circle
 tools/serve.mjs      static server
+tools/timelapse.mjs  renders one day as an MP4 headless (needs ffmpeg; --gfx high|low)
 ```
 
 Shelves are stocked by a planogram (`src/world/fixtures.js`): sections are

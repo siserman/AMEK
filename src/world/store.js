@@ -268,7 +268,7 @@ export function buildStore(ctx) {
   };
   add(shell, vcMat({ roughness: 0.8 }), { shadow: true });
   add(fix, vcMat({ roughness: 0.55, metalness: 0.1 }));
-  add(glow, new THREE.MeshBasicMaterial({ vertexColors: true }));
+  out.glow = add(glow, new THREE.MeshBasicMaterial({ vertexColors: true }));
   out.roof.push(add(roofB, vcMat({ roughness: 0.85 }), { shadow: true }));
   out.ceiling = add(ceil, new THREE.MeshBasicMaterial({ vertexColors: true }));
   out.roof.push(out.ceiling);

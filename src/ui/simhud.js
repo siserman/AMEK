@@ -55,8 +55,16 @@ export class SimHud {
     renderer.domElement.addEventListener('pointerdown', () => setTimeout(hideTip, 3000), { once: true });
   }
 
+  // the panel starts below the top bar, however that bar wrapped
+  layout() {
+    const bottom = this.root.querySelector('.sim-top').getBoundingClientRect().bottom;
+    $('sim-panel').style.top = Math.round(bottom + 8) + 'px';
+  }
+
   show() {
     this.root.hidden = false;
+    this.layout();
+    addEventListener('resize', () => this.layout());
     this.cam.active = true;
     this.update(1);
   }

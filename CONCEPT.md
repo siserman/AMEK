@@ -65,7 +65,16 @@ vegan, regional, saison, alkohol), loose-weight range, flavour variants.
 - The Warentrenner, a basket as the alternative to the cart, the packing table
 - Tongs and paper bags at the Backstation
 - More SKUs per section (the shelves repeat products more than a real store)
-- Quality setting for weaker GPUs and phones (fewer packs deep, no shadows)
+
+**Graphics**
+- Hoch (done): ambient occlusion, bloom at night, SMAA, physical sky, fitted
+  shadows
+- Ultra: WebGPURenderer with screen-space reflections on the shop floor,
+  screen-space GI and TRAA (best at 1–10×; temporal effects smear in a fast
+  time-lapse)
+- Einfach for phones: ambient occlusion baked into the vertex colours at load
+- Photo mode: a path-traced still of the paused scene (three-gpu-pathtracer)
+- Real characters and cars: rigged, animated CC0 models instead of boxes
 
 **v0.3 – VR**
 - WebXR: grab packs with your hands, push the cart by its handle, tap the card

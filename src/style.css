@@ -353,6 +353,13 @@ body.touch #register { bottom: auto; top: calc(var(--top) + 110px); }
   .toast { animation: none; transition: none; }
 }
 
+/* --------------------------------------------------------- graphics */
+.gfx-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.gfx-row .label { margin: 0 6px 0 0; }
+.gfx-row button { padding: 8px 14px; background: rgba(255, 255, 255, 0.12); color: var(--on-dark); }
+.gfx-row button[aria-pressed="true"] { background: var(--amber); color: var(--ink); }
+.gfx-row .note { flex-basis: 100%; margin: 2px 0 0; font-size: 13px; }
+
 /* ------------------------------------------------------- watch mode */
 .watch { margin-top: 22px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.18); }
 .watch .note { max-width: 62ch; margin: 0 0 12px; color: #d9e7e6; font-size: 15px; }
@@ -399,7 +406,7 @@ body.touch #register { bottom: auto; top: calc(var(--top) + 110px); }
   width: 310px; display: flex; flex-direction: column; align-items: stretch; pointer-events: none;
 }
 .sim-panel > * { pointer-events: auto; }
-.sim-panel-toggle { align-self: flex-end; margin-bottom: 6px; }
+.sim-panel-head { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 6px; }
 .sim-panel-toggle::after { content: " ▾"; }
 .sim-panel.collapsed .sim-panel-toggle::after { content: " ▸"; }
 .sim-panel.collapsed .sim-panel-body { display: none; }
@@ -472,4 +479,7 @@ body.watching #touch { display: none !important; }
   .ticker { width: calc(100% - 32px); bottom: calc(var(--bottom) + 56px); }
   .ticker li:nth-child(n + 3) { display: none; }
   #sim-hud:has(.follow-card:not([hidden])) .ticker { display: none; }
+}
+@media (max-width: 760px) {
+  .sim-panel-head [data-gfx-toggle] { display: none; }
 }

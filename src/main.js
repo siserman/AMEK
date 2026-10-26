@@ -10,6 +10,7 @@ import { Overlays } from './ui/overlays.js';
 import { Simulation } from './sim/sim.js';
 import { SimCamera } from './sim/camera.js';
 import { SimHud } from './ui/simhud.js';
+import { Graphics, LEVELS, pickLevel } from './engine/graphics.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -39,7 +40,23 @@ async function boot() {
   const ui = new Overlays(data, input);
   const world = buildWorld(renderer, data, { shadowSize: params.has('lowres') ? 1024 : 4096 });
   const game = new Game({ renderer, world, data, input, audio, hud, ui });
-  window.AMEK = { game, data, world, ui, THREE };
+  const gfx = new Graphics(renderer, world);
+  window.AMEK = { game, data, world, ui, gfx, THREE };
+  // the player's view: sharp shadows around the spot a few metres ahead
+  const ahead = new THREE.Vector3();
+  game.render = () => {
+    game.camera.getWorldDirection(ahead).multiplyScalar(12).add(game.camera.position).setY(0);
+    gfx.update({ day: 1, focus: ahead, reach: 46 });
+    gfx.render(game.camera);
+  };
+  const gfxButtons = () => {
+    for (const b of document.querySelectorAll('[data-gfx]')) b.setAttribute('aria-pressed', b.dataset.gfx === gfx.level);
+    for (const b of document.querySelectorAll('[data-gfx-toggle]')) b.textContent = 'Grafik: ' + LEVELS[gfx.level];
+  };
+  gfx.onChange(gfxButtons);
+  gfx.setLevel(pickLevel(params, input.touchMode));
+  for (const b of document.querySelectorAll('[data-gfx]')) b.addEventListener('click', () => gfx.setLevel(b.dataset.gfx, true));
+  for (const b of document.querySelectorAll('[data-gfx-toggle]')) b.addEventListener('click', () => gfx.setLevel(gfx.level === 'high' ? 'low' : 'high', true));
 
   const playing = () => game.mode === 'drive' || game.mode === 'walk';
   const resume = () => {
@@ -91,6 +108,7 @@ async function boot() {
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
     game.resize();
+    gfx.resize();
     if (watch) {
       watch.camera.aspect = innerWidth / innerHeight;
       watch.camera.updateProjectionMatrix();
@@ -111,7 +129,8 @@ async function boot() {
     // keep the haze behind what we look at, however far out the camera is
     world.scene.fog.near = 40 + cam.dist * 0.8;
     world.scene.fog.far = 220 + cam.dist * 2.5;
-    renderer.render(world.scene, camera);
+    gfx.update({ day: sim.lighting.day, focus: cam.target, reach: cam.dist * 1.1, sunDir: sim.lighting.sunDir });
+    gfx.render(camera);
     shud.afterRender();
     shud.update(dt);
   };

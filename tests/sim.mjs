@@ -127,6 +127,20 @@ await run(() => {
 });
 check(await run(() => AMEK.world.store.roof.every((m) => m.visible)), 'the roof is back from the outside');
 
+// graphics "high": post-processing, physical sky and a fitted shadow box
+const hi = await run(() => {
+  const g = AMEK.gfx;
+  g.setLevel('high');
+  AMEK.watch.hud.camera('tills');
+  for (let i = 0; i < 20; i++) AMEK.renderWatch(0.05);
+  const r = { composer: !!g.composer, sky: g.sky.visible && !AMEK.world.exterior.sky.visible, box: AMEK.world.sun.shadow.camera.right };
+  g.setLevel('low');
+  for (let i = 0; i < 3; i++) AMEK.renderWatch(0.05);
+  r.back = AMEK.world.exterior.sky.visible && AMEK.world.sun.shadow.camera.right === 55;
+  return r;
+});
+check(hi.composer && hi.sky && hi.box < 55 && hi.back, `graphics "high" renders and switches back (${JSON.stringify(hi)})`);
+
 // "next morning" runs in the page's animation frames; let the loop run for it
 await run(() => (AMEK.hold = false));
 await page.click('#sim-skip');

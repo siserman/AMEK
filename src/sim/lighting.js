@@ -9,6 +9,7 @@ const c = (h) => new THREE.Color(h);
 const DAY = { sky: c('#ffffff'), fog: c('#cfdde6'), hemiSky: c('#f2f6ff'), hemiGround: c('#b7b6a8') };
 const NIGHT = { sky: c('#18203a'), fog: c('#121828'), hemiSky: c('#36456e'), hemiGround: c('#1c2026') };
 const DUSK = c('#f0a878');
+const rad = (d) => (d * Math.PI) / 180;
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
@@ -45,6 +46,7 @@ export class Lighting {
     scene.add(l);
     this.canopy = l;
     this.tmp = new THREE.Color();
+    this.sunDir = new THREE.Vector3(0, 1, 0);
   }
 
   update(hour, shopLights) {
@@ -54,12 +56,14 @@ export class Lighting {
     const az = (s.az * Math.PI) / 180, el = (Math.max(s.elev, 2) * Math.PI) / 180;
     const t = this.sun.target.position;
     this.sun.position.set(t.x + Math.sin(az) * Math.cos(el) * 90, t.y + Math.sin(el) * 90, t.z - Math.cos(az) * Math.cos(el) * 90);
-    this.sun.intensity = 2.3 * smooth(0, 10, s.elev);
+    const bal = this.world.light.balance;
+    this.sunDir.set(Math.sin(az) * Math.cos(rad(s.elev)), Math.sin(rad(s.elev)), -Math.cos(az) * Math.cos(rad(s.elev)));
+    this.sun.intensity = 2.3 * smooth(0, 10, s.elev) * bal.sun;
     this.sun.color.set('#fff3df').lerp(DUSK, dusk * 0.7);
-    this.hemi.intensity = 0.32 + 1.58 * day;
+    this.hemi.intensity = (0.32 + 1.58 * day) * bal.hemi;
     this.hemi.color.copy(NIGHT.hemiSky).lerp(DAY.hemiSky, day);
     this.hemi.groundColor.copy(NIGHT.hemiGround).lerp(DAY.hemiGround, day);
-    this.scene.environmentIntensity = 0.1 + 0.35 * day;
+    this.scene.environmentIntensity = (0.1 + 0.35 * day) * bal.env;
     const fog = this.tmp.copy(NIGHT.fog).lerp(DAY.fog, day).lerp(DUSK, dusk * 0.35);
     this.scene.fog.color.copy(fog);
     if (this.scene.background && this.scene.background.isColor) this.scene.background.copy(fog);

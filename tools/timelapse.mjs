@@ -1,5 +1,5 @@
 // Renders a time-lapse of one AMEK day as an MP4, headless (needs ffmpeg).
-//   node tools/timelapse.mjs [--out amek-zeitraffer.mp4] [--size 960x540] [--fps 24] [--frames dir]
+//   node tools/timelapse.mjs [--out amek-zeitraffer.mp4] [--size 960x540] [--fps 24] [--gfx high|low] [--frames dir]
 // A shot list moves the camera through the day: the delivery at dawn, the
 // morning from above, the shop floor, dusk on the car park, the tills at the
 // evening peak and closing time. Each frame advances the simulation by a fixed
@@ -19,6 +19,7 @@ const arg = (name, def) => (process.argv.includes(name) ? process.argv[process.a
 const out = path.resolve(arg('--out', 'amek-zeitraffer.mp4'));
 const [W, H] = arg('--size', '960x540').split('x').map(Number);
 const fps = Number(arg('--fps', 24));
+const gfx = arg('--gfx', 'high');
 const frames = arg('--frames', fs.mkdtempSync(path.join(os.tmpdir(), 'amek-frames-')));
 fs.mkdirSync(frames, { recursive: true });
 
@@ -46,7 +47,7 @@ await new Promise((r) => server.listen(0, r));
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
 page.on('pageerror', (e) => console.error('page error:', e.message));
-await page.goto(`http://localhost:${server.address().port}/index.html?test&lowres`);
+await page.goto(`http://localhost:${server.address().port}/index.html?test&lowres&gfx=${gfx}`);
 await page.waitForFunction(() => window.AMEK && !document.getElementById('watch').disabled, null, { timeout: 180000 });
 await page.evaluate(() => (AMEK.hold = true));
 await page.click('#watch');

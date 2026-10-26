@@ -88,7 +88,10 @@
     <button type="button" data-cam="follow">Jemandem folgen</button>
   </div>
   <aside class="sim-panel" id="sim-panel" aria-label="Zahlen des Tages">
-    <button type="button" class="sim-panel-toggle" id="sim-panel-toggle" aria-expanded="true">Zahlen</button>
+    <div class="sim-panel-head">
+      <button type="button" data-gfx-toggle>Grafik: Hoch</button>
+      <button type="button" class="sim-panel-toggle" id="sim-panel-toggle" aria-expanded="true">Zahlen</button>
+    </div>
     <div class="sim-panel-body">
       <dl class="kpis" id="sim-kpis"></dl>
       <figure class="viz">
@@ -127,6 +130,12 @@
       <button id="go" type="button" class="primary" disabled>Markt wird eingeräumt …</button>
       <p id="loading-note" class="note">Über 12.000 Artikel kommen ins Regal.</p>
     </div>
+    <div class="gfx-row" role="group" aria-labelledby="gfx-label">
+      <span class="label" id="gfx-label">Grafik</span>
+      <button type="button" data-gfx="low">Einfach</button>
+      <button type="button" data-gfx="high">Hoch</button>
+      <span class="note">Hoch: weiche Schatten in Ecken und Regalen, leuchtende Lampen bei Nacht, ein echter Himmel. Braucht mehr Grafikleistung.</span>
+    </div>
     <div class="watch">
       <h2 class="label">Oder einfach zuschauen</h2>
       <p class="note">Der Markt läuft ohne dich: Leute kommen mit dem Auto oder zu Fuß, um fünf liefert der LKW, das Team räumt ein, sitzt an der Kasse und holt die Wagen rein. Im Zeitraffer, Tag für Tag, Woche für Woche.</p>
@@ -154,6 +163,7 @@
     <div class="row">
       <button id="resume" type="button" class="primary" autofocus>Weiter</button>
       <button id="mute" type="button">Ton aus</button>
+      <button type="button" data-gfx-toggle>Grafik: Hoch</button>
     </div>
   </div>
 </section>
