@@ -535,8 +535,7 @@ export class ProductSystem {
     for (let i = s; i < s + n; i += 3) {
       a[i] = x; a[i + 1] = y; a[i + 2] = z;
     }
-    attr.addUpdateRange(s, n);
-    attr.needsUpdate = true;
+    this.dirty(rec.chunk, s, n);
   }
 
   show(rec) {
@@ -545,8 +544,36 @@ export class ProductSystem {
     const attr = rec.chunk.mesh.geometry.attributes.position;
     const s = rec.vStart * 3, n = rec.vCount * 3;
     attr.array.set(rec.chunk.base.subarray(s, s + n), s);
-    attr.addUpdateRange(s, n);
+    this.dirty(rec.chunk, s, n);
+  }
+
+  // Upload changed vertex ranges; inside a batch (the simulation moves hundreds
+  // of packs per frame) a chunk with many changes is uploaded in one go.
+  dirty(chunk, start, count) {
+    if (this.batch) {
+      (chunk.ranges = chunk.ranges || []).push(start, count);
+      this.batch.add(chunk);
+      return;
+    }
+    const attr = chunk.mesh.geometry.attributes.position;
+    attr.addUpdateRange(start, count);
     attr.needsUpdate = true;
+  }
+  beginBatch() {
+    this.batch = new Set();
+  }
+  endBatch() {
+    const set = this.batch;
+    this.batch = null;
+    if (!set) return;
+    for (const chunk of set) {
+      const attr = chunk.mesh.geometry.attributes.position;
+      const r = chunk.ranges;
+      if (r.length <= 64) for (let i = 0; i < r.length; i += 2) attr.addUpdateRange(r[i], r[i + 1]);
+      else attr.clearUpdateRanges();
+      attr.needsUpdate = true;
+      chunk.ranges = [];
+    }
   }
 
   // Take one unit from a slot (via the item that was aimed at). Returns true on success.

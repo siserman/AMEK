@@ -2,7 +2,7 @@
 // lamp posts, the AMEK pylon and a row of houses across the street.
 import * as THREE from '../../vendor/three.module.min.js';
 import { GeoBuilder, vcMat } from './geo.js';
-import { STORE, LOT, ACCESS, STREET, CORRAL, DOORS } from './layout.js';
+import { STORE, LOT, ACCESS, STREET, CORRAL, ANNEX, SERVICE } from './layout.js';
 import { asphaltTexture, paverTexture, grassTexture, tex, logoTexture, textPlate, parkingSignCanvas, skyTexture, AMEK, canvas, FONT } from './textures.js';
 import { carInto, makeCart, mat } from './models.js';
 import { rng } from '../util.js';
@@ -12,7 +12,7 @@ const CAR_COLORS = ['#c9ccd0', '#1f2226', '#8a1c22', '#e8e8e6', '#3b4e6b', '#6b6
 
 export function buildExterior(ctx) {
   const { scene, col } = ctx;
-  const out = { spaces: [], parked: [] };
+  const out = { spaces: [], parked: [], parkedColliders: [], parkedMeshes: [] };
   const R = rng(2026);
 
   // --- ground layers with world-space UVs --------------------------------
@@ -32,10 +32,12 @@ export function buildExterior(ctx) {
     [LOT.x0, LOT.z0, LOT.x1 + 0.5, LOT.z1],
     [ACCESS.x0, ACCESS.z0, ACCESS.x1, STREET.z0],
     [STREET.x0, STREET.z0, STREET.x1, STREET.z1],
+    [SERVICE.x0, SERVICE.z0, SERVICE.x1, ACCESS.z0],
+    [SERVICE.apron.x0, SERVICE.apron.z0, SERVICE.apron.x1, SERVICE.apron.z1],
   ], 0.9);
   ground(paverTexture(), 2, 0.03, [
     [STORE.x0 - 2, STORE.z1 + STORE.wall, STORE.x1 + 6, LOT.z0],
-    [STORE.x1 + 0.3, STORE.z0, STORE.x1 + 6, STORE.z1 + 0.3],
+    [STORE.x1 + 0.3, ANNEX.z1, STORE.x1 + 6, STORE.z1 + 0.3],
     [STREET.x0, STREET.z1, STREET.x1, STREET.z1 + 3],
     [STREET.x0, STREET.z0 - 2.5, ACCESS.x0, STREET.z0],
     [ACCESS.x1, STREET.z0 - 2.5, STREET.x1, STREET.z0],
@@ -107,7 +109,17 @@ export function buildExterior(ctx) {
   curb(LOT.x1 + 0.2, LOT.aisleZ[1], ACCESS.x0, LOT.z1);
   curb(ACCESS.x1, LOT.z0 - 0.3, ACCESS.x1 + 0.3, STREET.z0 - 2.5);
   curb(ACCESS.x0 - 0.3, LOT.z1 + 0.3, ACCESS.x0, STREET.z0 - 2.5);
-  curb(ACCESS.x0 - 0.3, LOT.z0 - 0.3, ACCESS.x1 + 0.3, LOT.z0); // top end of the access road
+  // service lane up to the loading dock
+  const ap = SERVICE.apron;
+  curb(SERVICE.x0 - 0.3, SERVICE.z0 + 0.3, SERVICE.x0, LOT.z0 - 0.3);
+  curb(SERVICE.x1, SERVICE.z0 + 0.3, SERVICE.x1 + 0.3, LOT.z0 - 0.3);
+  curb(ap.x1, ap.z0 - 0.3, ap.x1 + 0.3, ap.z1 + 0.3);
+  curb(ap.x0, ap.z0 - 0.3, ap.x1, ap.z0);
+  curb(SERVICE.x1, ap.z1, ap.x1, ap.z1 + 0.3);
+  B.color('#f2f2ee');
+  for (let z = SERVICE.z0 + 3; z < ACCESS.z0 - 2; z += 6) B.flat((SERVICE.x0 + SERVICE.x1) / 2, 0.02, z, 0.12, 3);
+  B.color('#ffcc00');
+  for (const z of [ANNEX.dock.z0 - 0.15, ANNEX.dock.z1 + 0.15]) B.flat(ANNEX.x1 + 5, 0.021, z, 10, 0.15);
   // world bounds for the car
   col.box(STREET.x0, STREET.z1 + 2.5, STREET.x1, STREET.z1 + 3, 'bound');
   col.box(STREET.x0 - 1, STREET.z0 - 3, STREET.x0, STREET.z1 + 3, 'bound');
@@ -116,7 +128,8 @@ export function buildExterior(ctx) {
   curb(ACCESS.x1 + 0.3, STREET.z0 - 0.2, STREET.x1, STREET.z0);
   curb(STREET.x0, STREET.z1, STREET.x1, STREET.z1 + 0.2);
 
-  // --- parked cars ------------------------------------------------------------
+  // --- parked cars (their own meshes: the simulation replaces them) ----------
+  const CB = new GeoBuilder({ uv: false, color: true });
   const m = new THREE.Matrix4();
   for (const s of out.spaces) {
     const nearShop = s.row === 0 && s.x > 3 && s.x < 20;
@@ -129,8 +142,8 @@ export function buildExterior(ctx) {
     const heading = s.facing < 0 ? 0 : Math.PI; // nose towards the shop or towards the street
     const jitter = (R() - 0.5) * 0.25;
     m.makeRotationY(heading + (R() - 0.5) * 0.06).setPosition(s.x + jitter, 0, s.z + (R() - 0.5) * 0.3);
-    carInto(B, G, Lt, CAR_COLORS[Math.floor(R() * CAR_COLORS.length)], m);
-    col.box(s.x + jitter - 0.92, s.z - 2.3, s.x + jitter + 0.92, s.z + 2.3, 'car');
+    carInto(CB, G, Lt, CAR_COLORS[Math.floor(R() * CAR_COLORS.length)], m);
+    out.parkedColliders.push(col.box(s.x + jitter - 0.92, s.z - 2.3, s.x + jitter + 0.92, s.z + 2.3, 'car'));
     out.parked.push(s);
   }
 
@@ -191,7 +204,7 @@ export function buildExterior(ctx) {
   for (let z = LOT.z0 + 2; z < LOT.z1; z += 7) tree(LOT.x0 - 3, z + R() * 2, 0.9 + R() * 0.4);
   for (let z = STORE.z0; z < STORE.z1; z += 8) tree(STORE.x0 - 4.5, z, 1.1);
   for (let x = -40; x < 60; x += 9) tree(x + R() * 3, STREET.z1 + 6 + R() * 2, 0.8 + R() * 0.5);
-  for (let z = STORE.z0 - 4; z < STORE.z1; z += 7) tree(ACCESS.x1 + 6 + R() * 2, z, 1 + R() * 0.3);
+  for (let z = STORE.z0 - 8; z < STORE.z1; z += 7) tree(z < 6 ? 45.5 + R() * 2 : ACCESS.x1 + 7.5 + R() * 2, z, 1 + R() * 0.3);
 
   // bike stands at the front
   B.color('#9aa1a8');
@@ -248,9 +261,10 @@ export function buildExterior(ctx) {
     return mesh;
   };
   add(B, vcMat({ roughness: 0.6, metalness: 0.15 }));
-  add(G, vcMat({ roughness: 0.1, metalness: 0.6, side: THREE.DoubleSide }));
-  add(Lt, vcMat({ emissive: '#ffffff', emissiveIntensity: 0.2 }), false);
-  add(glow, new THREE.MeshBasicMaterial({ vertexColors: true }), false);
+  out.parkedMeshes.push(add(CB, vcMat({ roughness: 0.35, metalness: 0.3 })));
+  out.parkedMeshes.push(add(G, vcMat({ roughness: 0.1, metalness: 0.6, side: THREE.DoubleSide })));
+  out.parkedMeshes.push(add(Lt, vcMat({ emissive: '#ffffff', emissiveIntensity: 0.2 }), false));
+  out.lamps = add(glow, new THREE.MeshBasicMaterial({ vertexColors: true }), false);
   add(trees, vcMat({ roughness: 0.9 }));
   add(H, vcMat({ roughness: 0.9 }));
 

@@ -53,9 +53,15 @@ vegan, regional, saison, alkohol), loose-weight range, flavour variants.
 
 ## Roadmap
 
-**v0.2 – a busier market**
-- A queue at the till: shoppers who actually check out, a second till that
-  opens when the queue grows ("Kasse 2 bitte!")
+**v0.2 – the market runs without you** (done)
+- Watch mode with time-lapse: customers doing the whole circle by car or on
+  foot, the morning delivery, staff shifts, restocking from the backroom,
+  queues and "Kasse 2 bitte!", day and night, weeks at a time
+- Follow one person; numbers of the day; record a time-lapse video
+
+**v0.2.x – both at once**
+- Shop yourself in a market full of simulated customers (they queue in front of
+  you; the shelf you want may just have been emptied)
 - The Warentrenner, a basket as the alternative to the cart, the packing table
 - Tongs and paper bags at the Backstation
 - More SKUs per section (the shelves repeat products more than a real store)
@@ -75,7 +81,7 @@ vegan, regional, saison, alkohol), loose-weight range, flavour variants.
   sandbox until then
 
 **Later**
-- Time of day and crowds (Saturday 10:00 vs. Tuesday 20:30), out-of-stock gaps,
-  restocking staff
+- Weather, holidays and paydays in the traffic curve; Mindesthaltbarkeit and
+  markdowns in the evening; a weekly flyer that moves demand
 - Budget and nutrition goals from Snackinger and Cookinger
 - Your own fridge at home, where the trip ends

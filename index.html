@@ -57,6 +57,65 @@
   </div>
 </div>
 
+<div id="sim-hud" hidden>
+  <div class="sim-top">
+    <div class="sim-clock">
+      <span class="eyebrow" id="sim-week">Woche 1 · Tag 1</span>
+      <strong id="sim-time">Mo, 26.10. · 04:50</strong>
+      <span id="sim-open" class="sim-state">geschlossen</span>
+    </div>
+    <div class="sim-speed" role="group" aria-label="Zeitraffer">
+      <button type="button" data-speed="0" aria-label="Pause">❚❚</button>
+      <button type="button" data-speed="1">1×</button>
+      <button type="button" data-speed="10">10×</button>
+      <button type="button" data-speed="60" aria-pressed="true">60×</button>
+      <button type="button" data-speed="300">300×</button>
+      <button type="button" data-speed="1800">1800×</button>
+      <button type="button" id="sim-skip"><span class="wide">Zum nächsten Morgen</span><span class="narrow">→ Morgen</span></button>
+    </div>
+    <div class="sim-actions">
+      <button type="button" id="sim-rec" hidden>Aufnehmen</button>
+      <button type="button" id="sim-play">Selbst einkaufen</button>
+    </div>
+  </div>
+  <div class="sim-cams" role="group" aria-label="Kamera">
+    <button type="button" data-cam="overview" aria-pressed="true">Überblick</button>
+    <button type="button" data-cam="top">Draufsicht</button>
+    <button type="button" data-cam="shelves">Regale</button>
+    <button type="button" data-cam="tills">Kassen</button>
+    <button type="button" data-cam="dock">Laderampe</button>
+    <button type="button" data-cam="lot">Parkplatz</button>
+    <button type="button" data-cam="follow">Jemandem folgen</button>
+  </div>
+  <aside class="sim-panel" id="sim-panel" aria-label="Zahlen des Tages">
+    <button type="button" class="sim-panel-toggle" id="sim-panel-toggle" aria-expanded="true">Zahlen</button>
+    <div class="sim-panel-body">
+      <dl class="kpis" id="sim-kpis"></dl>
+      <figure class="viz">
+        <figcaption>Kund:innen pro Stunde · heute</figcaption>
+        <svg id="chart-hour" role="img"></svg>
+      </figure>
+      <figure class="viz">
+        <figcaption>Umsatz pro Tag</figcaption>
+        <svg id="chart-day" role="img"></svg>
+      </figure>
+    </div>
+  </aside>
+  <ol class="ticker" id="sim-ticker" aria-label="Was gerade passiert"></ol>
+  <div class="follow-card" id="sim-follow" hidden>
+    <span class="eyebrow" id="follow-kind">Kundin</span>
+    <strong id="follow-name"></strong>
+    <span id="follow-act"></span>
+    <span id="follow-cart" class="note"></span>
+    <div class="row">
+      <button type="button" id="follow-next">Andere Person</button>
+      <button type="button" id="follow-stop">Loslassen</button>
+    </div>
+  </div>
+  <p class="sim-tip" id="sim-tip">Ziehen dreht · Shift oder rechte Maustaste verschiebt · Mausrad zoomt · W A S D bewegt · Q/E dreht</p>
+  <div class="viz-tip" id="viz-tip" role="tooltip" hidden></div>
+</div>
+
 <section id="start" class="overlay" aria-labelledby="start-title">
   <div class="start-panel">
     <div class="wordmark" aria-hidden="true"><span>AMEK</span><i></i></div>
@@ -67,6 +126,11 @@
     <div class="go-row">
       <button id="go" type="button" class="primary" disabled>Markt wird eingeräumt …</button>
       <p id="loading-note" class="note">Über 12.000 Artikel kommen ins Regal.</p>
+    </div>
+    <div class="watch">
+      <h2 class="label">Oder einfach zuschauen</h2>
+      <p class="note">Der Markt läuft ohne dich: Leute kommen mit dem Auto oder zu Fuß, um fünf liefert der LKW, das Team räumt ein, sitzt an der Kasse und holt die Wagen rein. Im Zeitraffer, Tag für Tag, Woche für Woche.</p>
+      <button id="watch" type="button" disabled>Markt beobachten</button>
     </div>
     <details class="controls">
       <summary>Steuerung</summary>

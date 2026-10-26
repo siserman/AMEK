@@ -31,8 +31,14 @@ export const LANE_END_CAP = [-2.0, -1.6];
 
 export const PFAND = { x: 17.3, z: 12.0 }; // front face of the reverse vending machine
 
+// Behind the scenes: staff door in the east wall, the backroom annex with its
+// loading dock, and the service lane the delivery truck uses.
+export const STAFF_DOOR = { x: 18.15, z0: -9.4, z1: -7.8 };
+export const ANNEX = { x0: 18.3, x1: 24.0, z0: -13.3, z1: -2.0, h: 4.2, dock: { z0: -9.5, z1: -6.5, h: 3.3 }, door: { x0: 19.0, x1: 20.0 } };
+export const SERVICE = { x0: 26.5, x1: 31.5, z0: 4.0, apron: { x0: 24.0, x1: 42.5, z0: -20.0, z1: 4.0 } };
+
 export const AISLES = {
-  produceWall: { x: 18.0, z0: -9.5, z1: 8.5, depth: 0.9 },
+  produceWall: { x: 18.0, z0: -7.2, z1: 8.5, depth: 0.9 },
   produceIsland: { cx: 13.9, z0: -6.0, z1: 4.0 },
   gondolas: [
     { cx: 10.3, east: ['brot', 'fruehstueck'], west: ['kaffee-tee', 'backen'] },

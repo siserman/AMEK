@@ -1,7 +1,7 @@
 // The AMEK market: shell, glass front, doors, tills, signage and all fixtures.
 import * as THREE from '../../vendor/three.module.min.js';
 import { GeoBuilder, vcMat } from './geo.js';
-import { STORE, DOORS, GATE, RAILS, CHECKOUT, LANES, LANE_END_CAP, PFAND, AISLES } from './layout.js';
+import { STORE, DOORS, GATE, RAILS, CHECKOUT, LANES, LANE_END_CAP, PFAND, AISLES, STAFF_DOOR, ANNEX } from './layout.js';
 import { gondola, chiller, freezerChest, produceStand, bakery, palletRow, bin, wallShelf, Side, COL, stockShelf } from './fixtures.js';
 import { floorTexture, tex, signCanvas, textPlate, logoTexture, posterCanvas, beltTexture, AMEK, canvas, fitFont, FONT } from './textures.js';
 
@@ -15,8 +15,11 @@ export function buildStore(ctx) {
   const glass = new GeoBuilder({ uv: false, color: true });
   const shell = new GeoBuilder({ uv: false, color: true });
   const tags = new GeoBuilder({ uv: true });
-  Object.assign(ctx, { fix, glow, glass, tags, cache: new Map() });
-  const out = { doors: {}, lanes: [], signs: [] };
+  // roof and ceiling are their own meshes so a top-down camera can lift them off
+  const roofB = new GeoBuilder({ uv: false, color: true });
+  const ceil = new GeoBuilder({ uv: false, color: true });
+  Object.assign(ctx, { fix, glow, glass, tags, roofB, ceil, cache: new Map() });
+  const out = { doors: {}, lanes: [], signs: [], roof: [] };
 
   // --- floor & ceiling --------------------------------------------------
   const fw = S.x1 - S.x0, fd = S.z1 - S.z0;
@@ -26,21 +29,31 @@ export function buildStore(ctx) {
   floor.position.set((S.x0 + S.x1) / 2, 0.003, (S.z0 + S.z1) / 2);
   floor.receiveShadow = true;
   scene.add(floor);
-  glow.color('#d9dcda');
-  glow.quad([S.x0, S.h - 0.23, S.z0], [S.x1, S.h - 0.23, S.z0], [S.x1, S.h - 0.23, S.z1], [S.x0, S.h - 0.23, S.z1]);
+  ceil.color('#d9dcda');
+  ceil.quad([S.x0, S.h - 0.23, S.z0], [S.x1, S.h - 0.23, S.z0], [S.x1, S.h - 0.23, S.z1], [S.x0, S.h - 0.23, S.z1]);
   // roof slab, seen from outside
-  shell.color('#8d9296');
-  shell.boxMM(S.x0 - S.wall, S.h - 0.2, S.z0 - S.wall, S.x1 + S.wall, S.h, S.z1 + S.wall);
+  roofB.color('#8d9296');
+  roofB.boxMM(S.x0 - S.wall, S.h - 0.2, S.z0 - S.wall, S.x1 + S.wall, S.h, S.z1 + S.wall);
 
   // --- walls ------------------------------------------------------------
   const W = S.wall;
   shell.color('#eef0ee');
   shell.boxMM(S.x0 - W, 0, S.z0 - W, S.x1 + W, S.h, S.z0); // back
   shell.boxMM(S.x0 - W, 0, S.z0, S.x0, S.h, S.z1 + W); // west
-  shell.boxMM(S.x1, 0, S.z0, S.x1 + W, S.h, S.z1 + W); // east
+  // east wall with the staff door ("Nur für Personal") into the backroom
+  const SD = STAFF_DOOR;
+  shell.boxMM(S.x1, 0, S.z0, S.x1 + W, S.h, SD.z0);
+  shell.boxMM(S.x1, 0, SD.z1, S.x1 + W, S.h, S.z1 + W);
+  shell.boxMM(S.x1, 2.2, SD.z0, S.x1 + W, S.h, SD.z1);
   col.box(S.x0 - W, S.z0 - W, S.x1 + W, S.z0, 'wall');
   col.box(S.x0 - W, S.z0, S.x0, S.z1 + W, 'wall');
-  col.box(S.x1, S.z0, S.x1 + W, S.z1 + W, 'wall');
+  col.box(S.x1, S.z0, S.x1 + W, SD.z0, 'wall');
+  col.box(S.x1, SD.z1, S.x1 + W, S.z1 + W, 'wall');
+  shell.color('#a9adaa');
+  shell.boxMM(S.x1, 0, SD.z0, S.x1 + W, 0.012, SD.z1);
+  out.staffDoor = swingDoor(scene, S.x1 + W / 2, (SD.z0 + SD.z1) / 2, SD.z1 - SD.z0, Math.PI / 2, '#8a939b');
+  out.staffDoor.collider = col.box(S.x1 - 0.05, SD.z0, S.x1 + W + 0.05, SD.z1, 'staffdoor');
+  addSign(scene, textPlate('Nur für Personal', { w: 512, h: 96, bg: '#5d6267' }), S.x1 - 0.02, 2.35, (SD.z0 + SD.z1) / 2, 1.1, 0.2, -Math.PI / 2);
   // outside cladding: grey base, white panels, petrol band
   shell.color('#5d6267');
   shell.boxMM(S.x0 - W - 0.02, 0, S.z0 - W - 0.02, S.x1 + W + 0.02, 0.6, S.z0 - W);
@@ -239,8 +252,11 @@ export function buildStore(ctx) {
   });
 
   // ceiling lights
-  glow.color('#ffffff');
-  for (let z = -11; z <= 11; z += 2.75) glow.boxMM(S.x0 + 0.6, S.h - 0.28, z - 0.14, S.x1 - 0.6, S.h - 0.24, z + 0.14);
+  ceil.color('#ffffff');
+  for (let z = -11; z <= 11; z += 2.75) ceil.boxMM(S.x0 + 0.6, S.h - 0.28, z - 0.14, S.x1 - 0.6, S.h - 0.24, z + 0.14);
+
+  // --- backroom annex & loading dock --------------------------------------
+  buildAnnex(ctx, out);
 
   // --- finish meshes -----------------------------------------------------
   const add = (B, material, { shadow = false } = {}) => {
@@ -253,11 +269,125 @@ export function buildStore(ctx) {
   add(shell, vcMat({ roughness: 0.8 }), { shadow: true });
   add(fix, vcMat({ roughness: 0.55, metalness: 0.1 }));
   add(glow, new THREE.MeshBasicMaterial({ vertexColors: true }));
+  out.roof.push(add(roofB, vcMat({ roughness: 0.85 }), { shadow: true }));
+  out.ceiling = add(ceil, new THREE.MeshBasicMaterial({ vertexColors: true }));
+  out.roof.push(out.ceiling);
   const gm = add(glass, new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.22, roughness: 0.05, metalness: 0.5, depthWrite: false }));
   gm.renderOrder = 2;
   const tm = add(tags, new THREE.MeshStandardMaterial({ map: ctx.tagAtlas.texture, roughness: 0.6 }));
   tm.name = 'price-tags';
   return out;
+}
+
+function laneSign(n, open) {
+  const c = canvas(256, 256);
+  const g = c.getContext('2d');
+  g.fillStyle = open ? AMEK.petrol : '#5d6267';
+  g.fillRect(0, 0, 256, 256);
+  g.fillStyle = open ? '#ffffff' : '#c9ced2';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = `900 170px ${FONT}`;
+  g.fillText(String(n), 128, 112);
+  g.font = `700 36px ${FONT}`;
+  g.fillStyle = open ? AMEK.amber : '#9aa1a8';
+  g.fillText(open ? 'geöffnet' : 'geschlossen', 128, 222);
+  return c;
+}
+
+// Two swinging leaves in a wall; rotY turns the door to face along the wall.
+function swingDoor(scene, x, z, w, rotY, color) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+  g.rotation.y = rotY;
+  const leaves = [];
+  for (const s of [-1, 1]) {
+    const pivot = new THREE.Group();
+    pivot.position.x = (s * w) / 2;
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(w / 2 - 0.02, 2.15, 0.05), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+    leaf.position.set((-s * w) / 4, 1.08, 0);
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.3), new THREE.MeshStandardMaterial({ color: '#1c2630', roughness: 0.1 }));
+    win.position.set(0, 0.45, 0.03);
+    leaf.add(win);
+    const win2 = win.clone();
+    win2.position.z = -0.03;
+    win2.rotation.y = Math.PI;
+    leaf.add(win2);
+    pivot.add(leaf);
+    pivot.userData.side = s;
+    g.add(pivot);
+    leaves.push(pivot);
+  }
+  scene.add(g);
+  return { group: g, leaves, open: 0, x, z };
+}
+
+function buildAnnex(ctx, out) {
+  const { scene, col, roofB } = ctx;
+  const A = ANNEX, W = 0.25, H = A.h;
+  const B = new GeoBuilder({ uv: false, color: true });
+  // walls: north, south (with a personnel door), east (with the dock door)
+  B.color('#e4e6e3');
+  B.boxMM(A.x0, 0, A.z0, A.x1, H, A.z0 + W);
+  B.boxMM(A.x0, 0, A.z1 - W, A.door.x0, H, A.z1);
+  B.boxMM(A.door.x1, 0, A.z1 - W, A.x1, H, A.z1);
+  B.boxMM(A.door.x0, 2.2, A.z1 - W, A.door.x1, H, A.z1);
+  B.boxMM(A.x1 - W, 0, A.z0, A.x1, H, A.dock.z0);
+  B.boxMM(A.x1 - W, 0, A.dock.z1, A.x1, H, A.z1);
+  B.boxMM(A.x1 - W, A.dock.h, A.dock.z0, A.x1, H, A.dock.z1);
+  B.color('#5d6267');
+  B.boxMM(A.x0, 0, A.z0 - 0.02, A.x1 + 0.02, 0.6, A.z0);
+  B.boxMM(A.x1, 0, A.z0, A.x1 + 0.02, 0.6, A.dock.z0);
+  B.boxMM(A.x1, 0, A.dock.z1, A.x1 + 0.02, 0.6, A.z1);
+  B.color('#0d5c63');
+  B.boxMM(A.x0, H - 0.5, A.z0 - 0.03, A.x1 + 0.03, H, A.z0);
+  B.boxMM(A.x1, H - 0.5, A.z0, A.x1 + 0.03, H, A.z1 + 0.03);
+  B.boxMM(A.x0, H - 0.5, A.z1, A.x1, H, A.z1 + 0.03);
+  // concrete floor and the dock: leveller, rubber bumpers, a lamp
+  B.color('#a9adaa');
+  B.boxMM(A.x0, 0, A.z0, A.x1, 0.02, A.z1);
+  B.color('#2b2d30');
+  B.boxMM(A.x1, 0.95, A.dock.z0 - 0.35, A.x1 + 0.25, 1.35, A.dock.z0 - 0.1);
+  B.boxMM(A.x1, 0.95, A.dock.z1 + 0.1, A.x1 + 0.25, 1.35, A.dock.z1 + 0.35);
+  B.color('#ffcc00');
+  B.boxMM(A.x1, 0, A.dock.z0, A.x1 + 0.06, 0.08, A.dock.z1);
+  B.color('#3a3f44');
+  B.boxMM(A.x1 + 0.02, A.dock.h + 0.15, (A.dock.z0 + A.dock.z1) / 2 - 0.2, A.x1 + 0.4, A.dock.h + 0.3, (A.dock.z0 + A.dock.z1) / 2 + 0.2);
+  // racks with boxed stock along the north wall
+  const R = [[A.x0 + 0.4, A.z0 + 0.35, A.x1 - 2.0, A.z0 + 1.25]];
+  for (const [x0, z0, x1, z1] of R) {
+    B.color('#2f6fb5');
+    for (let x = x0; x <= x1 + 0.01; x += (x1 - x0) / 3) B.boxMM(x - 0.05, 0, z0, x + 0.05, 3.2, z0 + 0.08), B.boxMM(x - 0.05, 0, z1 - 0.08, x + 0.05, 3.2, z1);
+    for (const y of [0.15, 1.15, 2.15, 3.1]) {
+      B.color('#f08a1c');
+      B.boxMM(x0, y, z0, x1, y + 0.08, z1);
+      if (y > 3) continue;
+      const cols = ['#c8a477', '#b38e5f', '#d9b98a'];
+      for (let k = 0; k < 9; k++) {
+        B.color(cols[k % 3]);
+        const bx = x0 + 0.1 + k * ((x1 - x0 - 0.2) / 9);
+        B.boxMM(bx, y + 0.08, z0 + 0.1, bx + (x1 - x0) / 9 - 0.12, y + 0.5 + (k % 2) * 0.2, z1 - 0.1);
+      }
+    }
+  }
+  const mesh = new THREE.Mesh(B.build(), vcMat({ roughness: 0.8 }));
+  mesh.castShadow = mesh.receiveShadow = true;
+  scene.add(mesh);
+  roofB.color('#8d9296');
+  roofB.boxMM(A.x0, H - 0.18, A.z0, A.x1 + 0.03, H, A.z1 + 0.03);
+  // the dock's roll-up door, and the personnel door
+  const roll = new THREE.Mesh(new THREE.BoxGeometry(0.08, A.dock.h, A.dock.z1 - A.dock.z0), new THREE.MeshStandardMaterial({ color: '#b9bec2', roughness: 0.6, metalness: 0.3 }));
+  roll.position.set(A.x1 - 0.12, A.dock.h / 2, (A.dock.z0 + A.dock.z1) / 2);
+  scene.add(roll);
+  out.dock = { door: roll, open: 0, x: A.x1, z: (A.dock.z0 + A.dock.z1) / 2, collider: col.box(A.x1 - 0.25, A.dock.z0, A.x1, A.dock.z1, 'dock') };
+  out.annexDoor = swingDoor(scene, (A.door.x0 + A.door.x1) / 2, A.z1 - 0.12, A.door.x1 - A.door.x0, 0, '#5d6267');
+  out.annexDoor.collider = col.box(A.door.x0, A.z1 - W, A.door.x1, A.z1, 'annexdoor');
+  col.box(A.x0, A.z0, A.x1, A.z0 + W, 'wall');
+  col.box(A.x0, A.z1 - W, A.door.x0, A.z1, 'wall');
+  col.box(A.door.x1, A.z1 - W, A.x1, A.z1, 'wall');
+  col.box(A.x1 - W, A.z0, A.x1, A.dock.z0, 'wall');
+  col.box(A.x1 - W, A.dock.z1, A.x1, A.z1, 'wall');
+  addSign(scene, textPlate('Warenannahme', { w: 1024, h: 160 }), A.x1 + 0.03, 3.75, (A.dock.z0 + A.dock.z1) / 2, 2.4, 0.38, Math.PI / 2);
 }
 
 function hoursCanvas() {
@@ -395,31 +525,25 @@ function buildTills(ctx, out) {
     // lane number on a pole
     fix.color('#7b8288');
     fix.boxMM(b0 + 0.08, 0.85, C.z0 + 0.1, b0 + 0.13, 2.3, C.z0 + 0.15);
-    const numC = canvas(256, 256);
-    const ng = numC.getContext('2d');
-    ng.fillStyle = lane.open ? AMEK.petrol : '#5d6267';
-    ng.fillRect(0, 0, 256, 256);
-    ng.fillStyle = lane.open ? '#ffffff' : '#c9ced2';
-    ng.textAlign = 'center';
-    ng.textBaseline = 'middle';
-    ng.font = `900 170px ${FONT}`;
-    ng.fillText(String(lane.n), 128, 112);
-    ng.font = `700 36px ${FONT}`;
-    ng.fillStyle = lane.open ? AMEK.amber : '#9aa1a8';
-    ng.fillText(lane.open ? 'geöffnet' : 'geschlossen', 128, 222);
-    for (const r of [0, Math.PI]) {
-      addSign(scene, numC, b0 + 0.105, 2.45, C.z0 + 0.125 + (r ? -0.03 : 0.03), 0.42, 0.42, r);
-    }
+    const texOpen = tex(laneSign(lane.n, true)), texClosed = tex(laneSign(lane.n, false));
+    const signs = [0, Math.PI].map((r) => addSign(scene, lane.open ? laneSign(lane.n, true) : laneSign(lane.n, false), b0 + 0.105, 2.45, C.z0 + 0.125 + (r ? -0.03 : 0.03), 0.42, 0.42, r));
     // collisions: booth + counter as one block
     col.box(b0, C.z0, c1, C.z1, 'till');
-    // closed lanes get a barrier across the lane mouth
-    if (!lane.open) {
-      fix.color('#c8102e');
-      fix.boxMM(l0, 0.85, C.z0 - 0.03, l1, 0.9, C.z0);
-      fix.color('#9aa1a8');
-      fix.boxMM(l1 - 0.05, 0, C.z0 - 0.05, l1, 0.92, C.z0);
-      col.box(l0, C.z0 - 0.08, l1, C.z0 + 0.02, 'barrier');
-    }
+    // a barrier across the lane mouth while the till is closed
+    const barrier = new THREE.Group();
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(l1 - l0, 0.05, 0.03), new THREE.MeshStandardMaterial({ color: '#c8102e' }));
+    bar.position.set((l0 + l1) / 2, 0.875, C.z0 - 0.015);
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.92, 0.05), new THREE.MeshStandardMaterial({ color: '#9aa1a8' }));
+    post.position.set(l1 - 0.025, 0.46, C.z0 - 0.025);
+    barrier.add(bar, post);
+    scene.add(barrier);
+    const barrierCol = col.box(l0, C.z0 - 0.08, l1, C.z0 + 0.02, 'barrier');
+    const setOpen = (open) => {
+      for (const s of signs) s.material.map = open ? texOpen : texClosed;
+      barrier.visible = !open;
+      barrierCol.on = !open;
+    };
+    setOpen(lane.open);
     // impulse rack on the east side of the lane
     const rx1 = lane.n === LANES.length ? LANE_END_CAP[0] : LANES[lane.n].booth[0];
     const rack = new Side(rx1, C.z0 + 0.05, -Math.PI / 2, 1.2, 0.2);
@@ -436,7 +560,7 @@ function buildTills(ctx, out) {
     ps.begin('rack-' + lane.n);
     stockShelf(ctx, rack, lv.map((l) => ({ ...l, tagY: l.y - 0.055 })), ['kasse'], { maxDepth: 2 });
     ps.end();
-    out.lanes.push({ ...lane, belt, beltX: (c0 + c1) / 2, beltW: c1 - c0 - 0.12, cashierX: (b0 + b1) / 2 + 0.1, terminal: { x: c1 + 0.06, y: 1.05, z: 9.3 } });
+    out.lanes.push({ ...lane, belt, beltX: (c0 + c1) / 2, beltW: c1 - c0 - 0.12, cashierX: (b0 + b1) / 2 + 0.1, terminal: { x: c1 + 0.06, y: 1.05, z: 9.3 }, setOpen });
   }
   // end cap of the last lane
   fix.color('#dde1e4');

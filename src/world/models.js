@@ -265,3 +265,156 @@ export function animateWalk(person, speed, dt) {
   }
   u.body.position.y = Math.abs(Math.sin(u.phase)) * 0.02 * Math.min(1, speed);
 }
+
+// ---------------------------------------------------------------------------
+// A cheaper person for crowds: head and torso are one mesh, limbs share geometry.
+const limbGeo = { leg: new THREE.BoxGeometry(0.16, 0.88, 0.16).translate(0, -0.44, 0), arm: new THREE.BoxGeometry(0.1, 0.6, 0.1).translate(0, -0.3, 0) };
+let liteMat = null;
+
+export function makeLitePerson({ shirt = '#3a6ea5', pants = '#2b2f3a', skin = '#e0b48f', hair = '#3b2a1e', tall = 1, apron = null } = {}) {
+  liteMat = liteMat || vcMat({ roughness: 0.75 });
+  const B = new GeoBuilder({ uv: false, color: true });
+  B.color(shirt);
+  B.boxMM(-0.21, 0.89, -0.12, 0.21, 1.45, 0.12);
+  if (apron) {
+    B.color(apron);
+    B.boxMM(-0.17, 0.75, -0.125, 0.17, 1.3, -0.12);
+  }
+  B.color(skin);
+  B.boxMM(-0.045, 1.44, -0.045, 0.045, 1.52, 0.045);
+  B.ellipsoid(0, 1.6, 0, 0.11, 0.12, 0.11, [0, 0], 8, 6);
+  B.color(hair);
+  B.ellipsoid(0, 1.65, 0.02, 0.118, 0.09, 0.118, [0, 0], 8, 4);
+  const g = new THREE.Group();
+  const body = new THREE.Group();
+  body.scale.setScalar(tall);
+  g.add(body);
+  const core = new THREE.Mesh(B.build(), liteMat);
+  core.castShadow = true;
+  body.add(core);
+  const limb = (geo, color, x, y) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, 0);
+    const m = new THREE.Mesh(geo, mat(color));
+    m.castShadow = true;
+    pivot.add(m);
+    body.add(pivot);
+    return pivot;
+  };
+  const legL = limb(limbGeo.leg, pants, -0.1, 0.9);
+  const legR = limb(limbGeo.leg, pants, 0.1, 0.9);
+  const armL = limb(limbGeo.arm, shirt, -0.27, 1.43);
+  const armR = limb(limbGeo.arm, shirt, 0.27, 1.43);
+  g.userData = { legL, legR, armL, armR, body, phase: Math.random() * 6 };
+  return g;
+}
+
+export function poseSitting(p, on) {
+  const u = p.userData;
+  u.legL.rotation.x = u.legR.rotation.x = on ? Math.PI / 2 : 0;
+  u.body.position.y = on ? -0.38 : 0;
+  u.armL.rotation.x = u.armR.rotation.x = on ? 0.9 : 0;
+}
+
+export function posePushing(p, on) {
+  const u = p.userData;
+  u.pushing = on;
+  u.armL.rotation.x = u.armR.rotation.x = on ? -1.0 : 0;
+}
+
+// ---------------------------------------------------------------------------
+// The delivery truck: 9 m rigid lorry in AMEK livery. Forward is -z.
+export const TRUCK = { length: 9.0, width: 2.5 };
+
+export function makeTruck() {
+  const B = new GeoBuilder({ uv: false, color: true });
+  const G = new GeoBuilder({ uv: false, color: true });
+  const L = 4.5;
+  // chassis and bumpers
+  B.color('#26292c');
+  B.boxMM(-1.15, 0.45, -L, 1.15, 1.0, L);
+  // cab
+  B.color('#f4f5f3');
+  B.boxMM(-1.2, 1.0, -L, 1.2, 3.1, -2.55);
+  B.color(AMEK.petrol);
+  B.boxMM(-1.21, 1.0, -L - 0.01, 1.21, 1.45, -2.55);
+  B.color('#26292c');
+  B.boxMM(-1.18, 0.5, -L - 0.08, 1.18, 0.95, -L + 0.1);
+  G.color('#1c2630');
+  G.quad([1.1, 1.9, -L - 0.005], [-1.1, 1.9, -L - 0.005], [-1.1, 2.9, -L - 0.005], [1.1, 2.9, -L - 0.005], [0, 0]);
+  for (const sx of [-1, 1]) G.boxMM(sx * 1.205 - 0.005, 1.9, -L + 0.2, sx * 1.205 + 0.005, 2.8, -L + 1.1);
+  // box body
+  B.color('#f7f8f7');
+  B.boxMM(-1.25, 1.0, -2.45, 1.25, 3.7, L);
+  B.color(AMEK.petrol);
+  B.boxMM(-1.26, 1.0, -2.45, 1.26, 1.3, L + 0.01);
+  B.color('#b9bec2');
+  B.boxMM(-1.2, 1.05, L, 1.2, 3.6, L + 0.03);
+  // wheels: steer axle and double rear axle
+  B.color('#1a1a1a');
+  const wm = new THREE.Matrix4();
+  for (const z of [-3.4, 2.2, 3.4]) {
+    for (const sx of [-1, 1]) {
+      wm.makeTranslation(sx * 1.0, 0.5, z).multiply(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
+      B.m = wm;
+      B.cylinder(0, -0.16, 0, 0.5, 0.32, 12);
+      B.m = null;
+    }
+  }
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(B.build(), vcMat({ roughness: 0.5, metalness: 0.1 }));
+  const glass = new THREE.Mesh(G.build(), vcMat({ roughness: 0.1, metalness: 0.6, side: THREE.DoubleSide }));
+  body.castShadow = glass.castShadow = true;
+  group.add(body, glass);
+  // livery on both sides of the box
+  const lc = canvas(1024, 384);
+  const g = lc.getContext('2d');
+  g.fillStyle = '#f7f8f7';
+  g.fillRect(0, 0, 1024, 384);
+  drawLogo(g, 40, 70, 420, 210);
+  g.fillStyle = AMEK.petrol;
+  g.font = '800 64px "Archivo", Arial, sans-serif';
+  g.fillText('Frisch. Günstig.', 500, 160);
+  g.fillStyle = '#c98900';
+  g.fillText('Um die Ecke.', 500, 240);
+  const lt = tex(lc);
+  for (const sx of [-1, 1]) {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 2.4), new THREE.MeshStandardMaterial({ map: lt, roughness: 0.6 }));
+    p.position.set(sx * 1.262, 2.45, 1.0);
+    p.rotation.y = (sx * Math.PI) / 2;
+    group.add(p);
+  }
+  const lights = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.04), new THREE.MeshStandardMaterial({ color: '#fffbe8', emissive: '#fffbe8', emissiveIntensity: 0.3 }));
+  lights.position.set(0, 0.8, -L - 0.09);
+  group.add(lights);
+  group.userData = { lights };
+  return group;
+}
+
+// Roll cage (Rollcontainer) with boxed stock; fill 0..1 sets how full it looks.
+let cageMat = null;
+export function makeRollCage(fill = 1) {
+  if (!cageMat) cageMat = new THREE.MeshStandardMaterial({ map: wireTexture(), alphaTest: 0.45, side: THREE.DoubleSide, color: '#c9ced3', metalness: 0.5, roughness: 0.4 });
+  const g = new THREE.Group();
+  const W = 0.72, D = 0.82, H = 1.65;
+  const wire = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), cageMat);
+  wire.position.y = 0.12 + H / 2;
+  g.add(wire);
+  const B = new GeoBuilder({ uv: false, color: true });
+  B.color('#4b5157');
+  B.boxMM(-W / 2, 0.08, -D / 2, W / 2, 0.14, D / 2);
+  for (const [x, z] of [[-0.3, -0.34], [0.3, -0.34], [-0.3, 0.34], [0.3, 0.34]]) B.boxMM(x - 0.03, 0, z - 0.03, x + 0.03, 0.09, z + 0.03);
+  const cols = ['#c8a477', '#b38e5f', '#d9b98a', '#2f6fb5', '#c0392b', '#2e7d32', '#f2c230'];
+  const layers = Math.round(4 * fill);
+  for (let l = 0; l < layers; l++) {
+    for (let k = 0; k < 4; k++) {
+      B.color(cols[(l * 3 + k) % cols.length]);
+      const x = (k % 2) * 0.34 - 0.33, z = Math.floor(k / 2) * 0.39 - 0.38;
+      B.boxMM(x + 0.01, 0.15 + l * 0.36, z + 0.01, x + 0.32, 0.47 + l * 0.36, z + 0.37);
+    }
+  }
+  const box = new THREE.Mesh(B.build(), vcMat({ roughness: 0.8 }));
+  box.castShadow = true;
+  g.add(box);
+  return g;
+}

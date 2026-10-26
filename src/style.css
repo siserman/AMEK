@@ -352,3 +352,124 @@ body.touch #register { bottom: auto; top: calc(var(--top) + 110px); }
 @media (prefers-reduced-motion: reduce) {
   .toast { animation: none; transition: none; }
 }
+
+/* ------------------------------------------------------- watch mode */
+.watch { margin-top: 22px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.18); }
+.watch .note { max-width: 62ch; margin: 0 0 12px; color: #d9e7e6; font-size: 15px; }
+#sim-hud {
+  --sim-surface: rgba(10, 46, 49, 0.94);
+  --viz-bar: #c98500; /* amber stepped for the dark panel (validated: band, chroma, 3:1) */
+  --viz-muted: #a9bcbc;
+  position: fixed; inset: 0; pointer-events: none; z-index: 5;
+}
+#sim-hud > * { pointer-events: auto; }
+#sim-hud button {
+  padding: 7px 11px; font-size: 14px; font-weight: 800; border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1); color: var(--on-dark); border: 1px solid var(--glass-line);
+}
+#sim-hud button[aria-pressed="true"] { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+#sim-hud button:disabled { opacity: 0.7; }
+.sim-top {
+  position: absolute; top: var(--top); left: var(--gutter-l); right: var(--gutter-r);
+  display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; pointer-events: none;
+}
+.sim-top > * { pointer-events: auto; }
+.sim-clock {
+  background: var(--petrol); border-bottom: 5px solid var(--amber); border-radius: 3px;
+  padding: 7px 14px 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); min-width: 220px;
+}
+.sim-clock strong { display: block; font: 800 22px/1.15 var(--display); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.sim-state { display: inline-block; margin-top: 3px; font-size: 13px; font-weight: 700; color: #c3d3d3; }
+.sim-state::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #7d8b8c; margin-right: 6px; vertical-align: 1px; }
+.sim-state.on::before { background: #4fd17a; }
+.sim-speed, .sim-cams, .sim-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.sim-speed { background: var(--glass); border: 1px solid var(--glass-line); border-radius: 4px; padding: 5px; }
+.sim-speed button { font-family: var(--mono) !important; min-width: 46px; }
+#sim-skip { font-family: var(--display) !important; }
+.sim-actions { margin-left: auto; }
+#sim-rec.recording { background: var(--signal); border-color: var(--signal); }
+#sim-rec.recording::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #fff; margin-right: 7px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.2; } }
+.sim-cams {
+  position: absolute; left: var(--gutter-l); bottom: var(--bottom); max-width: calc(100% - var(--gutter-l) - var(--gutter-r) - 330px);
+  background: var(--glass); border: 1px solid var(--glass-line); border-radius: 4px; padding: 5px;
+}
+.sim-panel {
+  position: absolute; right: var(--gutter-r); top: calc(var(--top) + 54px); bottom: var(--bottom);
+  width: 310px; display: flex; flex-direction: column; align-items: stretch; pointer-events: none;
+}
+.sim-panel > * { pointer-events: auto; }
+.sim-panel-toggle { align-self: flex-end; margin-bottom: 6px; }
+.sim-panel-toggle::after { content: " ▾"; }
+.sim-panel.collapsed .sim-panel-toggle::after { content: " ▸"; }
+.sim-panel.collapsed .sim-panel-body { display: none; }
+.sim-panel-body {
+  background: var(--sim-surface); border: 1px solid var(--glass-line); border-radius: 4px;
+  padding: 12px 14px 10px; overflow: auto; min-height: 0; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; margin: 0; }
+.kpis dt { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--viz-muted); }
+.kpis dd { margin: 0 0 1px; font: 700 17px/1.15 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.viz { margin: 14px 0 0; }
+.viz figcaption { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--on-dark); }
+.viz svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
+.viz .bar { fill: var(--viz-bar); }
+.viz .axis { stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; }
+.viz .tick { fill: var(--viz-muted); font: 11px var(--mono); }
+.viz .val { fill: var(--on-dark); font: 600 11px var(--mono); }
+.viz .empty { fill: var(--viz-muted); font: 12px var(--display); }
+.viz .hit { fill: transparent; cursor: default; }
+.viz .hit.on { fill: rgba(255, 255, 255, 0.07); }
+.viz-tip {
+  position: fixed; z-index: 30; pointer-events: none !important; max-width: 240px;
+  background: #f3f6f5; color: var(--ink); border-radius: 4px; padding: 6px 9px; font-size: 13px; line-height: 1.35;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.viz-tip b { font-family: var(--mono); }
+.ticker {
+  position: absolute; left: var(--gutter-l); bottom: calc(var(--bottom) + 60px); width: min(430px, calc(100% - 360px));
+  list-style: none; margin: 0; padding: 0; font-size: 14px; line-height: 1.3; pointer-events: none !important;
+}
+.ticker li {
+  width: fit-content; max-width: 100%; margin-top: 4px; padding: 4px 10px; border-radius: 3px;
+  background: var(--glass); border: 1px solid var(--glass-line); color: #d9e7e6;
+}
+.ticker li:first-child { background: var(--sim-surface); color: #fff; border-left: 4px solid var(--amber); }
+.ticker li:nth-child(n + 3) { opacity: 0.7; }
+.ticker { display: flex; flex-direction: column-reverse; }
+.ticker time { font-family: var(--mono); color: var(--viz-muted); margin-right: 6px; }
+.follow-card {
+  position: absolute; left: var(--gutter-l); top: calc(var(--top) + 96px); width: min(290px, calc(100% - 32px));
+  background: var(--sim-surface); border: 1px solid var(--glass-line); border-left: 5px solid var(--amber); border-radius: 4px;
+  padding: 10px 14px 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.follow-card strong { display: block; font-size: 22px; font-weight: 900; line-height: 1.1; }
+.follow-card #follow-act { display: block; margin-top: 4px; font-weight: 600; }
+.follow-card .note { display: block; margin-top: 2px; font-size: 13px; }
+.follow-card .row { margin-top: 10px; gap: 6px; }
+.sim-tip {
+  position: absolute; left: 50%; top: calc(var(--top) + 76px); translate: -50% 0; margin: 0;
+  background: var(--glass); border: 1px solid var(--glass-line); border-radius: 4px; padding: 6px 12px;
+  font-size: 13px; color: #d9e7e6; white-space: nowrap; transition: opacity 0.6s; pointer-events: none !important;
+}
+.sim-tip.gone { opacity: 0; }
+#sim-hud.skipping .sim-cams, #sim-hud.skipping [data-speed] { opacity: 0.5; }
+body.watching #touch { display: none !important; }
+#sim-skip .narrow { display: none; }
+@media (max-width: 760px) {
+  .sim-clock { min-width: 0; padding: 5px 10px 6px; }
+  .sim-clock strong { font-size: 17px; }
+  .sim-speed { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .sim-speed button { min-width: 0; padding: 6px 7px !important; font-size: 13px !important; }
+  #sim-skip { white-space: nowrap; }
+  #sim-skip .wide, #sim-rec { display: none; }
+  #sim-skip .narrow { display: inline; }
+  .sim-cams { max-width: calc(100% - var(--gutter-l) - var(--gutter-r)); flex-wrap: nowrap; overflow-x: auto; }
+  .sim-cams button { white-space: nowrap; }
+  .sim-panel { top: calc(var(--top) + 132px); bottom: calc(var(--bottom) + 56px); width: min(310px, calc(100% - 32px)); }
+  .follow-card { top: auto; bottom: calc(var(--bottom) + 56px); }
+  .sim-tip { display: none; }
+  .ticker { width: calc(100% - 32px); bottom: calc(var(--bottom) + 56px); }
+  .ticker li:nth-child(n + 3) { display: none; }
+  #sim-hud:has(.follow-card:not([hidden])) .ticker { display: none; }
+}
