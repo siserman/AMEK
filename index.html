@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AMEK Einkaufen</title>
+<meta name="description" content="AMEK: einmal einkaufen, von der Einfahrt bis zum Kassenbon. Eine Lebenssimulation im Browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Archivo+Narrow:wght@500;700&family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<!-- AMEK:BODY -->
+<div id="stage" aria-hidden="true"></div>
+
+<div id="hud" hidden>
+  <div class="hud-top">
+    <div class="objective"><span class="eyebrow">Jetzt</span><p id="objective-text"></p></div>
+    <div class="status"><span id="clock"></span><span id="wallet"></span></div>
+  </div>
+  <aside id="zettel" hidden>
+    <h2 id="zettel-title">Einkaufszettel</h2>
+    <ol id="zettel-items"></ol>
+  </aside>
+  <div id="crosshair" hidden></div>
+  <div id="product-card" hidden>
+    <div class="pc-head"><span id="pc-brand"></span><span id="pc-tags"></span></div>
+    <div id="pc-name"></div>
+    <div id="pc-size"></div>
+    <div class="pc-price"><span id="pc-was"></span><span id="pc-price"></span><span id="pc-unit"></span></div>
+    <div id="pc-base"></div>
+  </div>
+  <div id="prompt" hidden>
+    <span id="prompt-main"><kbd>E</kbd><span id="prompt-text"></span></span>
+    <span id="prompt-alt"><kbd>Q</kbd><span id="prompt-alt-text"></span></span>
+    <span id="prompt-cart" hidden><kbd>F</kbd><span id="prompt-cart-text"></span></span>
+  </div>
+  <div id="cart-chip" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h3l2.4 10.2a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.8L21 8H6.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19.5" r="1.6" fill="currentColor"/><circle cx="17" cy="19.5" r="1.6" fill="currentColor"/></svg><span id="cart-text"></span></div>
+  <div id="drive-help" hidden><span id="speed">0 km/h</span><span class="keys">W/S Gas &amp; Bremse · A/D lenken · Leertaste bremsen · V Innenansicht · H Hupe</span></div>
+  <div id="register" hidden>
+    <div class="reg-row"><span id="reg-line"></span><span id="reg-amount"></span></div>
+    <div id="reg-total"></div>
+  </div>
+  <div id="pfand-display" hidden></div>
+  <div id="toasts" aria-live="polite"></div>
+</div>
+
+<div id="touch" hidden>
+  <div class="stick" data-stick><i></i></div>
+  <div class="tbtns">
+    <button type="button" data-action="use">E</button>
+    <button type="button" data-action="back">Q</button>
+    <button type="button" data-action="cart">Wagen</button>
+    <button type="button" data-action="list">Liste</button>
+    <button type="button" data-action="brake">Bremse</button>
+  </div>
+</div>
+
+<section id="start" class="overlay" aria-labelledby="start-title">
+  <div class="start-panel">
+    <div class="wordmark" aria-hidden="true"><span>AMEK</span><i></i></div>
+    <h1 id="start-title">Einmal einkaufen. Von der Einfahrt bis zum Kassenbon.</h1>
+    <p class="lede">Du fährst auf den Parkplatz, holst dir für einen Euro einen Wagen, gibst dein Leergut ab, packst ein, legst aufs Band, bezahlst, lädst in den Kofferraum und bringst den Wagen zurück. Der ganze Kreis.</p>
+    <h2 class="label">Was steht auf deinem Zettel?</h2>
+    <div id="scenarios" class="scenarios"></div>
+    <div class="go-row">
+      <button id="go" type="button" class="primary" disabled>Markt wird eingeräumt …</button>
+      <p id="loading-note" class="note">Über 12.000 Artikel kommen ins Regal.</p>
+    </div>
+    <details class="controls">
+      <summary>Steuerung</summary>
+      <dl>
+        <dt>Maus</dt><dd>umsehen (Klick ins Bild fängt die Maus)</dd>
+        <dt>W A S D</dt><dd>gehen / fahren, Shift rennen</dd>
+        <dt>E oder Klick</dt><dd>nehmen, benutzen, einsteigen</dd>
+        <dt>Q</dt><dd>Ware zurück ins Regal legen</dd>
+        <dt>F</dt><dd>Einkaufswagen schieben / loslassen</dd>
+        <dt>Tab</dt><dd>Inhalt des Wagens</dd>
+        <dt>M</dt><dd>Ton an/aus</dd>
+      </dl>
+    </details>
+  </div>
+</section>
+
+<section id="pause" class="overlay" hidden aria-labelledby="pause-title">
+  <div class="card-panel">
+    <h2 id="pause-title">Pause</h2>
+    <p>Klick auf „Weiter“, dann gehört die Maus wieder dem Spiel. Mit Esc kommst du jederzeit hierher.</p>
+    <div class="row">
+      <button id="resume" type="button" class="primary" autofocus>Weiter</button>
+      <button id="mute" type="button">Ton aus</button>
+    </div>
+  </div>
+</section>
+
+<section id="cartlist" class="overlay" hidden aria-labelledby="cartlist-title">
+  <div class="card-panel wide">
+    <div id="cartlist-zettel" class="mini-zettel" hidden><h3>Einkaufszettel</h3><ul id="cartlist-zettel-items"></ul></div>
+    <h2 id="cartlist-title">Im Wagen</h2>
+    <p id="cartlist-empty" class="note">Noch nichts drin.</p>
+    <div class="table-wrap"><table><tbody id="cartlist-body"></tbody></table></div>
+    <p class="sum">Ungefähr <b id="cartlist-total">0,00 €</b> inklusive Pfand</p>
+    <p id="cartlist-extra" class="note"></p>
+    <p class="note">Etwas doch nicht? Geh zum Regal, schau es an und drück Q – dann liegt es wieder an seinem Platz.</p>
+    <div class="row"><button type="button" class="primary" data-close>Weiter einkaufen</button></div>
+  </div>
+</section>
+
+<section id="pay" class="overlay" hidden aria-labelledby="pay-title">
+  <div class="terminal">
+    <header><span id="pay-title">Kasse 3</span><span>AMEK</span></header>
+    <div class="amount"><small>Zu zahlen</small><b id="pay-amount">0,00 €</b></div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-paytab="card" aria-selected="true">Karte</button>
+      <button type="button" role="tab" data-paytab="cash" aria-selected="false">Bar</button>
+    </div>
+    <div id="pay-card" class="pane">
+      <button id="tap-card" type="button" class="tap">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="11" width="36" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M6 19h36" stroke="currentColor" stroke-width="4"/><path d="M30 30c2-2 2-5 0-7M34 32c4-4 4-10 0-14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span>girocard auflegen</span>
+      </button>
+      <p id="card-hint" class="note"></p>
+      <div id="pin-box" hidden>
+        <p class="pin-label">Bitte PIN eingeben</p>
+        <p id="pin-dots" class="pin-dots">○○○○</p>
+        <div class="pinpad">
+          <button type="button" data-pin="1">1</button><button type="button" data-pin="2">2</button><button type="button" data-pin="3">3</button>
+          <button type="button" data-pin="4">4</button><button type="button" data-pin="5">5</button><button type="button" data-pin="6">6</button>
+          <button type="button" data-pin="7">7</button><button type="button" data-pin="8">8</button><button type="button" data-pin="9">9</button>
+          <button type="button" data-pin="c" class="corr">Korr</button><button type="button" data-pin="0">0</button><button type="button" data-pin="ok" class="ok">OK</button>
+        </div>
+        <p id="pin-note" class="note"></p>
+      </div>
+    </div>
+    <div id="pay-cash" class="pane" hidden>
+      <p class="note">Tipp auf Scheine und Münzen, um sie hinzulegen. Im Portemonnaie: <b id="cash-total"></b></p>
+      <div id="cash-wallet" class="wallet"></div>
+      <p class="label">Auf dem Teller</p>
+      <div id="cash-given" class="given"></div>
+      <p id="cash-sum" class="cash-sum"></p>
+      <div class="row">
+        <button id="cash-exact" type="button">Passend raussuchen</button>
+        <button id="cash-pay" type="button" class="primary" disabled>Bezahlen</button>
+      </div>
+    </div>
+    <p id="pay-error" class="error" role="alert"></p>
+    <div id="pay-done" class="pay-done" hidden><span id="pay-done-text">Zahlung erfolgt</span></div>
+  </div>
+</section>
+
+<section id="receipt" class="overlay" hidden aria-labelledby="receipt-title">
+  <div class="receipt-wrap">
+    <h2 id="receipt-title" class="sr-only">Kassenbon</h2>
+    <pre id="receipt-paper" class="paper"></pre>
+    <div class="row"><button type="button" class="primary" data-close autofocus>Bon einstecken</button></div>
+  </div>
+</section>
+
+<section id="end" class="overlay" hidden aria-labelledby="end-title">
+  <div class="card-panel wide">
+    <div class="wordmark small" aria-hidden="true"><span>AMEK</span><i></i></div>
+    <h2 id="end-title">Einkauf erledigt. Schönes Wochenende!</h2>
+    <ul id="end-list" class="end-list"></ul>
+    <div class="row">
+      <button id="again" type="button" class="primary">Nochmal einkaufen</button>
+      <button id="end-receipt" type="button">Kassenbon ansehen</button>
+    </div>
+  </div>
+</section>
+<!-- /AMEK:BODY -->
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

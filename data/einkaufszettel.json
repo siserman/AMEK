@@ -1,0 +1,73 @@
+{
+  "lists": [
+    {
+      "id": "bolognese",
+      "title": "Spaghetti Bolognese",
+      "note": "Für heute Abend, vier Personen.",
+      "items": [
+        { "label": "Spaghetti", "any": ["spaghetti", "spaghetti-vollkorn"] },
+        { "label": "Hackfleisch, 500 g", "any": ["hack-gemischt", "rinderhack", "veganes-hack"] },
+        { "label": "Tomaten (passiert oder gehackt)", "any": ["passata", "gehackte-tomaten"], "count": 2 },
+        { "label": "Zwiebeln", "any": ["zwiebeln"] },
+        { "label": "Knoblauch", "any": ["knoblauch"] },
+        { "label": "Parmesan", "any": ["parmigiano"] },
+        { "label": "Tomatenmark", "any": ["tomatenmark"] }
+      ]
+    },
+    {
+      "id": "fruehstueck",
+      "title": "Sonntagsfrühstück",
+      "note": "Für zwei, mit frischen Brötchen.",
+      "items": [
+        { "label": "Brötchen", "any": ["weizenbroetchen", "mehrkornbroetchen"], "count": 4 },
+        { "label": "Butter", "any": ["butter"] },
+        { "label": "Marmelade", "any": ["konfituere-*", "honig"] },
+        { "label": "Kaffee", "any": ["kaffee-*", "crema-bohne", "espresso-bohne", "kaffeepads", "kaffeekapseln"] },
+        { "label": "Milch", "any": ["vollmilch", "h-milch", "bio-vollmilch", "haferdrink"] },
+        { "label": "Eier", "any": ["eier-freiland", "eier-boden"] },
+        { "label": "Käse in Scheiben", "any": ["gouda"] },
+        { "label": "Orangensaft", "any": ["orangensaft"] }
+      ]
+    },
+    {
+      "id": "wocheneinkauf",
+      "title": "Wocheneinkauf",
+      "note": "Familie, eine Woche. Der Wagen wird voll.",
+      "items": [
+        { "label": "Milch", "any": ["vollmilch", "h-milch", "bio-vollmilch"], "count": 3 },
+        { "label": "Toastbrot", "any": ["buttertoast", "vollkorntoast"] },
+        { "label": "Butter", "any": ["butter"] },
+        { "label": "Äpfel", "any": ["aepfel-elstar", "aepfel-braeburn"] },
+        { "label": "Bananen", "any": ["bananen", "bio-bananen"] },
+        { "label": "Kartoffeln", "any": ["kartoffeln"] },
+        { "label": "Hähnchenbrust", "any": ["haehnchenbrust"] },
+        { "label": "Nudeln", "any": ["spaghetti", "penne", "fusilli", "farfalle", "spaghetti-vollkorn"], "count": 2 },
+        { "label": "Fruchtjoghurt", "any": ["fruchtjoghurt-*"], "count": 4 },
+        { "label": "Brokkoli", "any": ["brokkoli"] },
+        { "label": "Käse", "any": ["gouda", "emmentaler-gerieben", "mozzarella", "feta", "camembert"] },
+        { "label": "Mineralwasser", "any": ["wasser-*"], "count": 2 },
+        { "label": "Toilettenpapier", "any": ["toilettenpapier"] },
+        { "label": "Spülmittel", "any": ["spuelmittel"] }
+      ]
+    },
+    {
+      "id": "filmabend",
+      "title": "Filmabend",
+      "note": "Freunde kommen um acht.",
+      "items": [
+        { "label": "Pizza (TK)", "any": ["pizza-*"], "count": 2 },
+        { "label": "Chips", "any": ["chips-*", "tortillachips", "erdnussflips"], "count": 2 },
+        { "label": "Cola oder Limo", "any": ["cola", "cola-zero", "orangenlimo", "zitronenlimo", "eistee"] },
+        { "label": "Bier oder Radler", "any": ["pils-dose", "radler", "pils-alkoholfrei"], "count": 4 },
+        { "label": "Fruchtgummi", "any": ["fruchtgummi-*"] },
+        { "label": "Eis", "any": ["eis-*", "eis-stiel"] }
+      ]
+    },
+    {
+      "id": "frei",
+      "title": "Ohne Zettel",
+      "note": "Einfach durch den Markt schlendern.",
+      "items": []
+    }
+  ]
+}
