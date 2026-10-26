@@ -2,6 +2,8 @@
 // "high" adds ambient occlusion (packs sit in their shelves, corners darken),
 // bloom for lights after dark, SMAA edges, a physical sky lit by the actual sun,
 // and a shadow map that follows what you look at, so shadows stay sharp.
+// "ultra" runs on the WebGPU renderer (see ultra.js) with bounce light and
+// floor reflections; it is chosen at startup, the others switch live.
 import * as THREE from '../../vendor/three.module.min.js';
 import { EffectComposer } from '../../vendor/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from '../../vendor/addons/postprocessing/RenderPass.js';
@@ -11,26 +13,39 @@ import { SMAAPass } from '../../vendor/addons/postprocessing/SMAAPass.js';
 import { OutputPass } from '../../vendor/addons/postprocessing/OutputPass.js';
 import { Sky } from '../../vendor/addons/objects/Sky.js';
 
-export const LEVELS = { low: 'Einfach', high: 'Hoch' };
+export const LEVELS = { low: 'Einfach', high: 'Hoch', ultra: 'Ultra' };
 const KEY = 'amek.gfx';
 
-// URL first (?gfx=low|high), then what this browser chose last time, then a
-// guess: phones and tablets start simple, everything else high.
+// URL first (?gfx=low|high|ultra), then what this browser chose last time,
+// then a guess: phones and tablets start simple, everything else high. Ultra
+// needs WebGPU.
 export function pickLevel(params, touch) {
+  const ok = (l) => l in LEVELS && (l !== 'ultra' || !!navigator.gpu);
   const want = params.get('gfx');
-  if (want in LEVELS) return want;
+  if (ok(want)) return want;
   try {
     const saved = localStorage.getItem(KEY);
-    if (saved in LEVELS) return saved;
+    if (ok(saved)) return saved;
   } catch {
     // storage blocked: fall through to the guess
   }
   return touch || params.has('lowres') ? 'low' : 'high';
 }
 
+export function rememberLevel(level) {
+  try {
+    localStorage.setItem(KEY, level);
+  } catch {
+    // not remembered, still applied
+  }
+}
+
 export class Graphics {
-  constructor(renderer, world) {
+  constructor(renderer, world, ultra = null) {
     this.renderer = renderer;
+    this.ultraModule = ultra;
+    this.webgpu = !!renderer.isWebGPURenderer;
+    this.fast = false;
     this.world = world;
     this.scene = world.scene;
     this.sun = world.sun;
@@ -50,22 +65,24 @@ export class Graphics {
     this.sunHome = this.sun.target.position.clone();
   }
 
+  // Einfach and Hoch switch live on the WebGL renderer; Ultra is the WebGPU
+  // renderer and needs a restart to get in or out (returns false then)
   setLevel(level, remember = false) {
-    if (!(level in LEVELS)) return;
+    if (!(level in LEVELS) || (level === 'ultra') !== this.webgpu) return false;
     this.level = level;
-    if (remember) {
-      try {
-        localStorage.setItem(KEY, level);
-      } catch {
-        // not remembered, still applied
-      }
-    }
-    const high = level === 'high';
-    if (high && !this.composer) this.build();
+    if (remember) rememberLevel(level);
+    const high = level !== 'low';
+    if (level === 'high' && !this.composer) this.build();
+    if (level === 'ultra' && !this.ultra) this.buildUltra();
+    // a polished floor, for the reflections
+    const floor = this.world.store.floor;
+    if (floor) floor.material.roughness = level === 'ultra' ? 0.14 : 0.32;
     // High: less flat fill light from the sky, more sun, so shapes read and
     // ambient occlusion has something to work with
     const L = this.world.light;
-    Object.assign(L.balance, high ? { hemi: 0.6, sun: 1.45, env: 0.78 } : { hemi: 1, sun: 1, env: 1 });
+    // (Ultra adds bounce light of its own, so it takes even less fill)
+    const balance = { low: { hemi: 1, sun: 1, env: 1 }, high: { hemi: 0.6, sun: 1.45, env: 0.78 }, ultra: { hemi: 0.5, sun: 1.45, env: 0.7 } };
+    Object.assign(L.balance, balance[level]);
     this.world.hemi.intensity = L.hemi * L.balance.hemi;
     this.sun.intensity = L.sun * L.balance.sun;
     this.scene.environmentIntensity = L.env * L.balance.env;
@@ -76,6 +93,7 @@ export class Graphics {
       this.world.store.glow?.material.color.setScalar(1);
     }
     for (const fn of this.listeners || []) fn(level);
+    return true;
   }
 
   onChange(fn) {
@@ -128,6 +146,20 @@ export class Graphics {
     this.sky = sky;
   }
 
+  buildUltra() {
+    const U = this.ultraModule;
+    this.ultra = new U.UltraPipeline(this.renderer, this.scene);
+    this.sky = U.makeSky();
+    this.sky.visible = false;
+    this.scene.add(this.sky);
+  }
+
+  // Ultra at time-lapse speed: drop the effects that build up over frames
+  setFast(fast) {
+    this.fast = fast;
+    if (this.ultra) this.ultra.fast = fast;
+  }
+
   aoScale() {
     return this.renderer.getPixelRatio() > 1.2 ? 0.5 : 1;
   }
@@ -142,12 +174,13 @@ export class Graphics {
   // per frame: day 0..1 (night..day), what the camera looks at and how much of it
   update({ day = 1, focus, reach, sunDir, time }) {
     this.day = day;
-    if (this.level !== 'high') return;
+    if (this.level === 'low') return;
     if (focus) this.focus.copy(focus);
     if (reach) this.reach = reach;
     // bloom only for things brighter than daylight: lamps, headlights, the sun
-    this.bloom.threshold = 1.05 + day * 5;
-    this.bloom.strength = 0.6 - day * 0.32;
+    const threshold = 1.05 + day * 5, strength = 0.6 - day * 0.32;
+    if (this.ultra) this.ultra.setBloom(strength, threshold);
+    else Object.assign(this.bloom, { threshold, strength });
     const glow = 1 + (1 - day) * 2.2;
     const lamps = this.world.exterior.lamps, shop = this.world.store.glow;
     if (lamps && day < 0.5) lamps.material.color.setScalar(glow);
@@ -155,6 +188,10 @@ export class Graphics {
     this.fitShadow();
     // the light never goes below 2° (see sim/lighting.js); the sky gets the real sun
     const s = sunDir || this.tmp.copy(this.sun.position).sub(this.sun.target.position).normalize();
+    if (this.ultra) {
+      this.sky.sunPosition.value.copy(s); // its clouds drift in real time
+      return;
+    }
     this.sky.material.uniforms.sunPosition.value.copy(s);
     // clouds drift with simulated time when watching, with real time otherwise
     this.sky.material.uniforms.time.value = time ?? performance.now() / 1000;
@@ -196,6 +233,10 @@ export class Graphics {
   }
 
   render(camera) {
+    if (this.level === 'ultra') {
+      this.ultra.render(camera);
+      return;
+    }
     if (this.level !== 'high') {
       this.renderer.render(this.scene, camera);
       return;

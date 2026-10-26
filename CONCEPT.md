@@ -69,9 +69,9 @@ vegan, regional, saison, alkohol), loose-weight range, flavour variants.
 **Graphics**
 - Hoch (done): ambient occlusion, bloom at night, SMAA, physical sky, fitted
   shadows
-- Ultra: WebGPURenderer with screen-space reflections on the shop floor,
-  screen-space GI and TRAA (best at 1–10×; temporal effects smear in a fast
-  time-lapse)
+- Ultra (done): WebGPU renderer with screen-space reflections on the shop
+  floor, screen-space GI and TRAA at 1–10×, a per-frame graph at time-lapse
+  speeds
 - Einfach for phones: ambient occlusion baked into the vertex colours at load
 - Photo mode: a path-traced still of the paused scene (three-gpu-pathtracer)
 - Real characters and cars: rigged, animated CC0 models instead of boxes

@@ -29,6 +29,7 @@ export function buildStore(ctx) {
   floor.position.set((S.x0 + S.x1) / 2, 0.003, (S.z0 + S.z1) / 2);
   floor.receiveShadow = true;
   scene.add(floor);
+  out.floor = floor;
   ceil.color('#d9dcda');
   ceil.quad([S.x0, S.h - 0.23, S.z0], [S.x1, S.h - 0.23, S.z0], [S.x1, S.h - 0.23, S.z1], [S.x0, S.h - 0.23, S.z1]);
   // roof slab, seen from outside

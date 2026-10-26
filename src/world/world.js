@@ -8,13 +8,14 @@ import { buildStore } from './store.js';
 import { buildExterior } from './exterior.js';
 import { setAnisotropy } from './textures.js';
 
-export function buildWorld(renderer, data, { shadowSize = 4096 } = {}) {
-  setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
+export function buildWorld(renderer, data, { shadowSize = 4096, PMREMGenerator = THREE.PMREMGenerator } = {}) {
+  // WebGL and WebGPU renderers report this differently
+  setAnisotropy(Math.min(8, renderer.capabilities ? renderer.capabilities.getMaxAnisotropy() : renderer.getMaxAnisotropy()));
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#b9d3ea');
   scene.fog = new THREE.Fog('#cfdde6', 70, 260);
 
-  const pmrem = new THREE.PMREMGenerator(renderer);
+  const pmrem = new PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   scene.environmentIntensity = 0.45;
 

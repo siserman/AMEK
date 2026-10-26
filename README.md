@@ -57,18 +57,28 @@ duty), customers per hour, revenue per day, and a ticker of what just happened.
 
 ### Graphics
 
-Two levels, chosen on the start screen (also in the pause menu and the watch
-panel; the browser remembers the choice, `?gfx=low|high` overrides it).
+Three levels, chosen on the start screen (also in the pause menu and the watch
+panel; the browser remembers the choice, `?gfx=low|high|ultra` overrides it).
 Phones and tablets start on **Einfach**, everything else on **Hoch**.
 
 - **Einfach:** straight rendering with MSAA, one shadow map over the whole site.
 - **Hoch:** ambient occlusion (GTAO, so packs sit in their shelves and corners
   and undersides darken), bloom for lamps, shop windows and headlights after
-  dark, SMAA edges, a physical sky (Preetham) lit by the simulation's real sun
-  (dusk turns the sky mauve, at night it goes dark), a shadow map that follows
-  what you look at so shadows stay sharp up close, and a light balance with
-  more sun and less flat sky fill. All of it is three.js r180's own addons,
-  vendored in `vendor/addons/`; no other dependency.
+  dark, SMAA edges, a physical sky with clouds lit by the simulation's real sun
+  (dusk turns it red and violet, at night it goes dark), a shadow map that
+  follows what you look at so shadows stay sharp up close, and a light balance
+  with more sun and less flat sky fill.
+- **Ultra** (needs WebGPU: current Chrome, Edge or Safari): three.js'
+  WebGPU renderer with screen-space global illumination (light bouncing off
+  the floor and shelves, plus its ambient occlusion), reflections in the
+  polished shop floor, glass and car paint, bloom and temporal anti-aliasing.
+  Those build up over several frames and would smear in a fast time-lapse, so
+  above 10× a per-frame version takes over (GTAO, reflections, bloom, SMAA).
+  Ultra is a different renderer: switching into or out of it restarts the page
+  (watch mode comes straight back, the simulation starts over).
+
+Everything comes from three.js itself (r186), vendored in `vendor/` by
+`tools/vendor-three.mjs`; no other dependency.
 
 ## v0.1 (2026-10-26): what's in
 
@@ -132,14 +142,15 @@ Phones and tablets start on **Einfach**, everything else on **Hoch**.
 
 ## Code
 
-Plain ES modules on three.js (vendored in `vendor/`, r180, MIT).
+Plain ES modules on three.js (vendored in `vendor/`, r186, MIT).
 
 ```
 src/
   main.js            boot, render loop
   data.js            loads the assortment, expands flavour variants, prices in cents
   engine/            input (keys, mouse, touch), synthesised audio, 2D collision,
-                     graphics levels (post-processing, sky, shadow fitting)
+                     graphics levels (post-processing, sky, shadow fitting),
+                     ultra.js: the WebGPU renderer and its node pipeline
   world/             layout, store shell & tills, fixtures + planogram, car park,
                      product atlas (package art + price tags), product templates,
                      models (cart, car, people)
@@ -152,8 +163,10 @@ src/
 data/                sortiment.json, einkaufszettel.json
 tests/smoke.mjs      plays the whole trip headless and checks the receipt
 tests/sim.mjs        runs the market for a week and checks every day closes the circle
+tests/ultra.mjs      Ultra on WebGPU (SwiftShader): boots, draws, switches levels
 tools/serve.mjs      static server
-tools/timelapse.mjs  renders one day as an MP4 headless (needs ffmpeg; --gfx high|low)
+tools/timelapse.mjs  renders one day as an MP4 headless (needs ffmpeg; --gfx low|high|ultra)
+tools/vendor-three.mjs  vendors a three.js release: minified builds plus the addons used
 ```
 
 Shelves are stocked by a planogram (`src/world/fixtures.js`): sections are
@@ -189,3 +202,9 @@ delivery unloaded, the early shift in, customers served, a second till opening a
 the peak, everyone gone by 23:30, the shelves full again in the morning, "next
 morning" landing on 06:30, a delivery and hundreds of customers every working
 day, Saturday busier than Monday, Sunday closed, and empty shelves staying rare.
+
+`tests/ultra.mjs` starts Ultra in the full Chromium build with WebGPU on
+SwiftShader (the headless shell can't show WebGPU canvases): it checks the
+WebGPU renderer is used, that both graphs draw a real picture (shop, shelves at
+1×, the time-lapse graph at 300×, night), and that the graphics button restarts
+into WebGL and back.

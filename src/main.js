@@ -10,7 +10,7 @@ import { Overlays } from './ui/overlays.js';
 import { Simulation } from './sim/sim.js';
 import { SimCamera } from './sim/camera.js';
 import { SimHud } from './ui/simhud.js';
-import { Graphics, LEVELS, pickLevel } from './engine/graphics.js';
+import { Graphics, LEVELS, pickLevel, rememberLevel } from './engine/graphics.js';
 
 const params = new URLSearchParams(location.search);
 
@@ -22,8 +22,24 @@ async function fontsReady(ms = 2500) {
 
 async function boot() {
   const stage = document.getElementById('stage');
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, params.has('lowres') ? 1 : 1.75));
+  // Ultra needs the WebGPU renderer, so the level is settled before the renderer
+  let level = pickLevel(params, matchMedia('(pointer: coarse)').matches);
+  let ultra = null, renderer = null;
+  if (level === 'ultra') {
+    try {
+      ultra = await import('./engine/ultra.js');
+      renderer = await ultra.createRenderer();
+    } catch (e) {
+      console.warn('AMEK: Ultra konnte nicht starten', e);
+    }
+    if (!renderer) {
+      ultra = null;
+      level = 'high';
+    }
+  }
+  renderer ||= new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  // Ultra's effects are costly per pixel and TRAA smooths the edges anyway
+  renderer.setPixelRatio(Math.min(devicePixelRatio, params.has('lowres') || ultra ? 1 : 1.75));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -38,9 +54,9 @@ async function boot() {
   await fontsReady(params.has('test') ? 300 : 2500);
   const data = await loadData();
   const ui = new Overlays(data, input);
-  const world = buildWorld(renderer, data, { shadowSize: params.has('lowres') ? 1024 : 4096 });
+  const world = buildWorld(renderer, data, { shadowSize: params.has('lowres') ? 1024 : 4096, PMREMGenerator: ultra?.PMREMGenerator });
   const game = new Game({ renderer, world, data, input, audio, hud, ui });
-  const gfx = new Graphics(renderer, world);
+  const gfx = new Graphics(renderer, world, ultra);
   window.AMEK = { game, data, world, ui, gfx, THREE };
   // the player's view: sharp shadows around the spot a few metres ahead
   const ahead = new THREE.Vector3();
@@ -54,9 +70,27 @@ async function boot() {
     for (const b of document.querySelectorAll('[data-gfx-toggle]')) b.textContent = 'Grafik: ' + LEVELS[gfx.level];
   };
   gfx.onChange(gfxButtons);
-  gfx.setLevel(pickLevel(params, input.touchMode));
-  for (const b of document.querySelectorAll('[data-gfx]')) b.addEventListener('click', () => gfx.setLevel(b.dataset.gfx, true));
-  for (const b of document.querySelectorAll('[data-gfx-toggle]')) b.addEventListener('click', () => gfx.setLevel(gfx.level === 'high' ? 'low' : 'high', true));
+  gfx.setLevel(level);
+  // into or out of Ultra means another renderer: remember the choice and restart
+  // (in watch mode straight back into watching)
+  const chooseLevel = (want) => {
+    if (gfx.setLevel(want, true)) return;
+    rememberLevel(want);
+    const q = new URLSearchParams(location.search);
+    q.delete('gfx');
+    if (watch) q.set('watch', '');
+    location.search = q.toString();
+  };
+  const ultraOk = !!navigator.gpu;
+  const order = ultraOk ? ['low', 'high', 'ultra'] : ['low', 'high'];
+  for (const b of document.querySelectorAll('[data-gfx]')) {
+    if (b.dataset.gfx === 'ultra' && !ultraOk) {
+      b.disabled = true;
+      b.title = 'Ultra braucht WebGPU (aktuelles Chrome, Edge oder Safari)';
+    }
+    b.addEventListener('click', () => chooseLevel(b.dataset.gfx));
+  }
+  for (const b of document.querySelectorAll('[data-gfx-toggle]')) b.addEventListener('click', () => chooseLevel(order[(order.indexOf(gfx.level) + 1) % order.length]));
 
   const playing = () => game.mode === 'drive' || game.mode === 'walk';
   const resume = () => {
@@ -129,6 +163,7 @@ async function boot() {
     // keep the haze behind what we look at, however far out the camera is
     world.scene.fog.near = 40 + cam.dist * 0.8;
     world.scene.fog.far = 220 + cam.dist * 2.5;
+    gfx.setFast(shud.speed > 10 || shud.skipping);
     gfx.update({ day: sim.lighting.day, focus: cam.target, reach: cam.dist * 1.1, sunDir: sim.lighting.sunDir, time: sim.clock.t * 0.05 });
     gfx.render(camera);
     shud.afterRender();

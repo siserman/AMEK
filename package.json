@@ -1,13 +1,15 @@
 {
   "name": "amek",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "AMEK – a browser life simulation of a whole grocery run at a German discounter.",
   "type": "module",
   "scripts": {
     "start": "node tools/serve.mjs",
-    "test": "node tests/smoke.mjs && node tests/sim.mjs",
-    "test:sim": "node tests/sim.mjs"
+    "test": "node tests/smoke.mjs && node tests/sim.mjs && node tests/ultra.mjs",
+    "test:sim": "node tests/sim.mjs",
+    "test:ultra": "node tests/ultra.mjs",
+    "vendor:three": "node tools/vendor-three.mjs"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
