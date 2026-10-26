@@ -8,7 +8,7 @@ import {
  	PointLight,
  	Scene,
  	Object3D,
-} from './three.module.min.js';
+} from '../../three.module.min.js';
 
 /**
  * This class represents a scene with a basic room setup that can be used as
@@ -35,6 +35,9 @@ class RoomEnvironment extends Scene {
 	constructor() {
 
 		super();
+
+		this.name = 'RoomEnvironment';
+		this.position.y = - 3.5;
 
 		const geometry = new BoxGeometry();
 		geometry.deleteAttribute( 'uv' );

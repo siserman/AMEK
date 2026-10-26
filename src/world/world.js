@@ -1,6 +1,6 @@
 // Builds the whole scene: lights, sky, car park, market, stocked shelves.
 import * as THREE from '../../vendor/three.module.min.js';
-import { RoomEnvironment } from '../../vendor/RoomEnvironment.js';
+import { RoomEnvironment } from '../../vendor/addons/environments/RoomEnvironment.js';
 import { CollisionWorld } from '../engine/collision.js';
 import { ProductAtlas, TagAtlas } from './atlas.js';
 import { ProductSystem } from './products.js';
@@ -29,6 +29,7 @@ export function buildWorld(renderer, data, { shadowSize = 4096 } = {}) {
   sc.left = -55; sc.right = 55; sc.top = 50; sc.bottom = -50; sc.near = 10; sc.far = 160;
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.04;
+  sun.shadow.radius = 2.5; // soft PCF edges
   scene.add(sun, sun.target);
 
   const col = new CollisionWorld();

@@ -26,7 +26,7 @@ async function boot() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, params.has('lowres') ? 1 : 1.75));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = 1.0;
   stage.appendChild(renderer.domElement);
@@ -129,7 +129,7 @@ async function boot() {
     // keep the haze behind what we look at, however far out the camera is
     world.scene.fog.near = 40 + cam.dist * 0.8;
     world.scene.fog.far = 220 + cam.dist * 2.5;
-    gfx.update({ day: sim.lighting.day, focus: cam.target, reach: cam.dist * 1.1, sunDir: sim.lighting.sunDir });
+    gfx.update({ day: sim.lighting.day, focus: cam.target, reach: cam.dist * 1.1, sunDir: sim.lighting.sunDir, time: sim.clock.t * 0.05 });
     gfx.render(camera);
     shud.afterRender();
     shud.update(dt);

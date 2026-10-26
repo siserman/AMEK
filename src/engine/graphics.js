@@ -117,10 +117,12 @@ export class Graphics {
     u.rayleigh.value = 1.6;
     u.mieCoefficient.value = 0.006;
     u.mieDirectionalG.value = 0.82;
+    u.cloudCoverage.value = 0.5; // half cloudy, it's late October
+    u.cloudDensity.value = 0.45;
     u.gain = { value: 0.62 };
     sky.material.fragmentShader = sky.material.fragmentShader
       .replace('void main() {', 'uniform float gain;\nvoid main() {')
-      .replace('gl_FragColor = vec4( retColor, 1.0 );', 'gl_FragColor = vec4( retColor * gain + vec3( 0.006, 0.009, 0.022 ), 1.0 );');
+      .replace('gl_FragColor = vec4( texColor, 1.0 );', 'gl_FragColor = vec4( texColor * gain + vec3( 0.006, 0.009, 0.022 ), 1.0 );');
     sky.visible = false;
     this.scene.add(sky);
     this.sky = sky;
@@ -138,7 +140,7 @@ export class Graphics {
   }
 
   // per frame: day 0..1 (night..day), what the camera looks at and how much of it
-  update({ day = 1, focus, reach, sunDir }) {
+  update({ day = 1, focus, reach, sunDir, time }) {
     this.day = day;
     if (this.level !== 'high') return;
     if (focus) this.focus.copy(focus);
@@ -154,6 +156,8 @@ export class Graphics {
     // the light never goes below 2° (see sim/lighting.js); the sky gets the real sun
     const s = sunDir || this.tmp.copy(this.sun.position).sub(this.sun.target.position).normalize();
     this.sky.material.uniforms.sunPosition.value.copy(s);
+    // clouds drift with simulated time when watching, with real time otherwise
+    this.sky.material.uniforms.time.value = time ?? performance.now() / 1000;
   }
 
   // Fit the sun's shadow box around the focus, snapped to whole shadow texels in
