@@ -1,16 +1,18 @@
-// Loads the AMEK assortment (data/sortiment.json) and shopping lists, expands
+// Loads the AMEK assortment (data/sortiment.json), its product data (packaging,
+// nutrition, GTINs: data/produktdaten.json) and the shopping lists, expands
 // flavour variants into their own SKUs and converts prices to cents.
 import { cents, grundpreis } from './util.js';
 
 export async function loadData(base = '') {
-  const [sortiment, zettel] = await Promise.all([
+  const [sortiment, zettel, produktdaten] = await Promise.all([
     fetch(base + 'data/sortiment.json').then((r) => r.json()),
     fetch(base + 'data/einkaufszettel.json').then((r) => r.json()),
+    fetch(base + 'data/produktdaten.json').then((r) => r.json()),
   ]);
-  return prepare(sortiment, zettel);
+  return prepare(sortiment, zettel, produktdaten);
 }
 
-export function prepare(sortiment, zettel) {
+export function prepare(sortiment, zettel, produktdaten = { products: {}, gtin: {}, plu: {} }) {
   const sections = new Map(sortiment.sections.map((s) => [s.id, s]));
   const products = [];
   for (const raw of sortiment.products) {
@@ -33,6 +35,17 @@ export function prepare(sortiment, zettel) {
       p.cap = p.cap || p.accent;
       p.fruit = p.fruit || p.accent;
       p.grundpreis = grundpreis({ ...p, price: p.price });
+      // product data: the base entry, overridden where a variant differs
+      const pd = produktdaten.products, extra = { ...pd[raw.id], ...(v ? pd[p.id] : null) };
+      p.base = raw.id;
+      p.pack = extra.pack || null;
+      p.declaration = extra.declaration || null;
+      p.nutrition = extra.nutrition || null;
+      p.abv = extra.abv ?? null;
+      p.feed = extra.feed || null;
+      p.note = extra.note || null;
+      p.gtin = produktdaten.gtin[p.id] || null;
+      p.plu = produktdaten.plu[p.id] || null;
       p.index = products.length;
       products.push(p);
     }
@@ -42,7 +55,7 @@ export function prepare(sortiment, zettel) {
     ...l,
     items: l.items.map((it) => ({ ...it, count: it.count || 1, ids: expandIds(it.any, products) })),
   }));
-  return { meta: sortiment.meta, brands: sortiment.brands, sections, products, byId, lists };
+  return { meta: sortiment.meta, productMeta: produktdaten.meta || null, brands: sortiment.brands, sections, products, byId, lists };
 }
 
 function expandIds(patterns, products) {

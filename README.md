@@ -11,7 +11,11 @@ five in the morning the truck backs up to the dock, the team unloads it, fills
 the shelves, sits at the tills and fetches the carts.
 
 - Concept and roadmap: [`CONCEPT.md`](CONCEPT.md)
-- Assortment: [`data/sortiment.json`](data/sortiment.json) (285 SKUs, 30 sections)
+- Assortment: [`data/sortiment.json`](data/sortiment.json) (285 SKUs, 30 sections),
+  with packaging, nutrition and barcodes in [`data/produktdaten.json`](data/produktdaten.json)
+- The full list: [`docs/sortiment.md`](docs/sortiment.md), or searchable with a
+  data sheet per product (packaging, dimensions, nutrition table, EAN-13, QR code):
+  [`docs/sortiment.html`](docs/sortiment.html)
 - Shopping lists: [`data/einkaufszettel.json`](data/einkaufszettel.json)
 
 ## Play
@@ -140,6 +144,31 @@ Everything comes from three.js itself (r186), vendored in `vendor/` by
 - **The world grew a back side:** a staff door, the backroom annex with racks
   and a roll-up dock door, and a service lane for the truck.
 
+## Product data
+
+Every product carries what a later step needs for realistic 3D packs and for
+nutrition goals: the packaging type and main material (Giebelkarton, Becher mit
+Aluplatine, Schraubglas, PET-Einwegflasche …), units in multipacks, outer
+dimensions in millimetres (the same `dim` the game builds its packs from), and
+typical nutrition per 100 g or 100 ml in the order of a German nutrition label.
+These are estimates for comparable discounter products, not values of real
+products. Labelling follows the EU rules (LMIV): loose produce and bakery goods,
+single-ingredient fresh food, coffee, tea, spices, salt, mineral water, chewing
+gum and beer carry no nutrition table, so their values are marked as typical;
+wine shows its energy on the label and the rest behind a QR code (e-label);
+pet food lists analytical constituents instead.
+
+Each product also has an EAN-13 in GS1's prefix 20, which is reserved for
+in-store numbering and can't collide with a real product: `20 2635 SSS III C`,
+where 2635 spells AMEK on a phone keypad, then department, item and check
+digit. The QR code carries the same GTIN as a GS1 Digital Link
+(`https://amek.example/01/0…`), the format newer packs use. Loose produce and
+bakery items have a short cashier code. `src/barcode.js` encodes EAN-13 (SVG)
+and Digital Links; the QR encoder is qrcode-generator (MIT), vendored.
+
+`npm run sortiment` regenerates `docs/sortiment.md` and `docs/sortiment.html`
+after a data change.
+
 ## Code
 
 Plain ES modules on three.js (vendored in `vendor/`, r186, MIT).
@@ -160,13 +189,16 @@ src/
                      the orbit camera
   ui/                HUD and overlays (payment terminal, receipt, end screen),
                      watch-mode HUD with charts
-data/                sortiment.json, einkaufszettel.json
+data/                sortiment.json, produktdaten.json, einkaufszettel.json
+docs/                sortiment.md and sortiment.html, generated from the data
+tests/data.mjs       product data: packaging, valid unique GTINs, nutrition that adds up
 tests/smoke.mjs      plays the whole trip headless and checks the receipt
 tests/sim.mjs        runs the market for a week and checks every day closes the circle
 tests/ultra.mjs      Ultra on WebGPU (SwiftShader): boots, draws, switches levels
 tools/serve.mjs      static server
 tools/timelapse.mjs  renders one day as an MP4 headless (needs ffmpeg; --gfx low|high|ultra)
 tools/vendor-three.mjs  vendors a three.js release: minified builds plus the addons used
+tools/sortiment.mjs  writes the assortment list (Markdown and a searchable page)
 ```
 
 Shelves are stocked by a planogram (`src/world/fixtures.js`): sections are

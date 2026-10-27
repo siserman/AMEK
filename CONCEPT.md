@@ -75,6 +75,11 @@ vegan, regional, saison, alkohol), loose-weight range, flavour variants.
 - Einfach for phones: ambient occlusion baked into the vertex colours at load
 - Photo mode: a path-traced still of the paused scene (three-gpu-pathtracer)
 - Real characters and cars: rigged, animated CC0 models instead of boxes
+- Realistic packs from the product data: each packaging type (Becher,
+  Schraubglas, Giebelkarton, Tetra Brik, PET-Flasche, Netz, Schlauchbeutel …)
+  as a parametric 3D model sized by its millimetre dimensions, with the
+  material's look (glass, foil, cardboard), the barcode on the back and the
+  nutrition table on the side
 
 **v0.3 – VR**
 - WebXR: grab packs with your hands, push the cart by its handle, tap the card

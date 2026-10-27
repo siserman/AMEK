@@ -6,9 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node tools/serve.mjs",
-    "test": "node tests/smoke.mjs && node tests/sim.mjs && node tests/ultra.mjs",
+    "test": "node tests/data.mjs && node tests/smoke.mjs && node tests/sim.mjs && node tests/ultra.mjs",
+    "test:data": "node tests/data.mjs",
     "test:sim": "node tests/sim.mjs",
     "test:ultra": "node tests/ultra.mjs",
+    "sortiment": "node tools/sortiment.mjs",
     "vendor:three": "node tools/vendor-three.mjs"
   },
   "devDependencies": {
