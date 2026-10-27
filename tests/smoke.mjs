@@ -248,6 +248,12 @@ if (needsPin) {
 await page.waitForFunction(() => AMEK.ui.openId === 'receipt', null, { timeout: 10000 });
 const receipt = await page.textContent('#receipt-paper');
 check(receipt.includes('Leergutbon') && receipt.includes('TSE') && receipt.includes('MwSt'), 'Kassenbon has Leergutbon, VAT table and TSE lines');
+const codes = await run(() => {
+  const eans = [...document.getElementById('receipt-paper').textContent.matchAll(/EAN (\d{13})/g)].map((m) => m[1]);
+  const scanned = AMEK.game.state.receipts.at(-1).lines.filter((l) => l.kind === 'item' || l.kind === 'loose');
+  return { eans: eans.length, lines: scanned.length, match: scanned.every((l) => eans.includes(AMEK.data.byId.get(l.sku).gtin)), svgs: document.querySelectorAll('#receipt-codes svg').length };
+});
+check(codes.eans === codes.lines && codes.match && codes.svgs === 2, `every article line shows its EAN, with receipt barcode and TSE QR code below (${JSON.stringify(codes)})`);
 await shot('07-receipt');
 await page.click('#receipt [data-close]');
 

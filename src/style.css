@@ -309,6 +309,12 @@ tr.paid td.name::after { content: " · bezahlt"; color: #8fd4a4; font-size: 12px
   max-height: calc(100vh - 120px);
   overflow-y: auto;
 }
+#receipt-paper { margin: 0; font: inherit; }
+.receipt-codes { white-space: normal; display: grid; justify-items: center; gap: 14px; margin-top: 16px; }
+.receipt-codes figure { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.receipt-codes figcaption { font-size: 11px; color: #555; }
+.receipt-codes .code-bon svg { width: 226px; height: auto; display: block; }
+.receipt-codes .code-tse svg { width: 132px; height: 132px; display: block; }
 
 .end-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 4px; }
 .end-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--glass-line); }

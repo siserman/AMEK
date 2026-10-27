@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepare } from '../src/data.js';
 import { checkDigit, isValidGtin, ean13Modules, ean13Svg, digitalLink } from '../src/barcode.js';
-import qrcode from '../vendor/qrcode.mjs';
+import qrcode from '../vendor/qrcode.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => JSON.parse(fs.readFileSync(path.join(root, 'data', f), 'utf8'));

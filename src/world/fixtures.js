@@ -135,7 +135,7 @@ export function stockShelf(ctx, side, levels, sectionIds, { maxDepth = 3, uStart
         // price tag on the shelf edge, at the left of the block
         if (tags && lv.tagY !== null) {
           const tw = Math.min(0.12, Math.max(0.09, sw - 0.01));
-          side.quad(tags, u + 0.005, u + 0.005 + tw, lv.tagY, lv.tagY + tw / 2, -0.004, tagAtlas.rect(p));
+          side.quad(tags, u + 0.005, u + 0.005 + tw, lv.tagY, lv.tagY + tw / 2, -0.009, tagAtlas.rect(p)); // in front of the price rail (-0.006)
         }
         u += sw;
       });

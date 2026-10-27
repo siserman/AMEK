@@ -106,14 +106,18 @@ Everything comes from three.js itself (r186), vendored in `vendor/` by
   take leaves a gap, and Q puts it back.
 - **Products:** every SKU has package art drawn at load time (fictional AMEK
   house brands), a shelf tag with price and Grundpreis (per kg/l, as PAngV
-  requires since 2022), Pfand where it applies, and offer prices with "statt".
+  requires since 2022), Pfand where it applies, offer prices with "statt" and
+  the article's EAN-13 barcode at the bottom left.
 - **The till:** load the belt (hold E), the cashier scans at discounter speed
   into a small bay, and you'd better pack fast. The customer display shows each
   line and the total. Pay by girocard (PIN above 50 €) or count out cash from
   your wallet and get change back.
-- **The Kassenbon:** item lines, quantities and weights, Pfand lines, the
-  Leergutbon, MwSt A (7 %) / B (19 %) table, savings, card slip and the
-  TSE lines every German receipt carries.
+- **The Kassenbon:** item lines with each article's EAN (and the short code
+  for loose and bakery goods), quantities and weights, Pfand lines, the
+  Leergutbon, MwSt A (7 %) / B (19 %) table, savings, card slip and the TSE
+  lines every German receipt carries; at the bottom a scannable receipt barcode
+  (29 · till · receipt number · date, for returns) and the TSE check code as a
+  QR code in the DSFinV-K layout (with a made-up signature).
 - **Leaving:** the exit only opens when everything is paid, then boot, corral,
   drive off, and a summary of the trip.
 

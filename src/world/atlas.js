@@ -4,6 +4,7 @@
 import * as THREE from '../../vendor/three.module.min.js';
 import { canvas, tex, FONT, FONT_NARROW, fitFont, wrapText, drawLogo, roundRect, AMEK } from './textures.js';
 import { euro, inkOn, luminance, shade } from '../util.js';
+import { ean13Modules } from '../barcode.js';
 
 const CELL = 128, LABEL_H = 112, COLS = 32;
 
@@ -466,20 +467,43 @@ export class TagAtlas {
     g.font = `500 17px ${FONT_NARROW}`;
     g.fillStyle = '#333';
     const sizeLine = p.loose ? 'lose · je kg' : p.size;
-    g.fillText(sizeLine, 16, 52);
+    g.fillText(sizeLine, 16, 50);
+    // left lines at the price's height push it to the right
+    let left = 124;
     if (p.grundpreis) {
-      g.font = `500 16px ${FONT_NARROW}`;
-      g.fillText(p.grundpreis, 16, 104);
+      g.font = `500 15px ${FONT_NARROW}`;
+      g.fillText(p.grundpreis, 16, 69);
+      left = Math.max(left, 16 + g.measureText(p.grundpreis).width + 10);
     }
     if (p.pfand) {
-      g.font = `600 16px ${FONT_NARROW}`;
-      g.fillText('zzgl. ' + euro(p.pfand) + ' Pfand', 16, 84);
+      const t = 'zzgl. ' + euro(p.pfand) + ' Pfand';
+      g.font = `600 15px ${FONT_NARROW}`;
+      g.fillText(t, 16, p.grundpreis ? 85 : 69);
+      left = Math.max(left, 16 + g.measureText(t).width + 10);
+    }
+    // the EAN-13 in a white box, bottom left, like on a real shelf label
+    if (p.gtin) {
+      const bits = ean13Modules(p.gtin), bx = 14, by = 103;
+      g.fillStyle = '#ffffff';
+      g.fillRect(bx - 4, by - 3, 103, 28);
+      g.fillStyle = '#141414';
+      for (let i = 0; i < 95; i++) {
+        const guard = i < 3 || (i >= 45 && i < 50) || i >= 92;
+        if (bits[i] === '1') g.fillRect(bx + i, by, 1, guard ? 17 : 14);
+      }
+      g.font = `500 8px ui-monospace, Menlo, monospace`;
+      g.textBaseline = 'top';
+      g.fillText(p.gtin.replace(/^(\d)(\d{6})(\d{6})$/, '$1 $2 $3'), bx + 6, by + 16);
     }
     g.textAlign = 'right';
     g.textBaseline = 'alphabetic';
     g.fillStyle = offer ? AMEK.red : '#141414';
+    // the price takes what is left right of the barcode and those lines
+    const price = euro(p.price);
     g.font = `900 54px ${FONT}`;
-    g.fillText(euro(p.price), TW - 10, TH - 14);
+    const room = TW - 10 - left, wide = g.measureText(price).width;
+    if (wide > room) g.font = `900 ${Math.floor((54 * room) / wide)}px ${FONT}`;
+    g.fillText(price, TW - 10, TH - 14);
     if (offer) {
       g.font = `700 17px ${FONT}`;
       g.fillStyle = '#141414';

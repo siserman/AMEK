@@ -159,9 +159,9 @@ export class Checkout {
     this.warnedFull = false;
     const p = item.p;
     if (p.loose) {
-      this.addLine({ name: p.bon, qty: 1, weight: item.weight, unit: p.price, total: item.price, vat: p.vat, sku: p.id, kind: 'loose' });
+      this.addLine({ name: p.bon, qty: 1, weight: item.weight, unit: p.price, total: item.price, vat: p.vat, sku: p.id, gtin: p.gtin, plu: p.plu, kind: 'loose' });
     } else {
-      this.addLine({ name: p.bon, qty: 1, unit: p.price, total: p.price, vat: p.vat, sku: p.id, was: p.was, kind: 'item' });
+      this.addLine({ name: p.bon, qty: 1, unit: p.price, total: p.price, vat: p.vat, sku: p.id, gtin: p.gtin, plu: p.plu, was: p.was, kind: 'item' });
     }
     if (p.pfand) this.addLine({ name: 'Pfand' + (p.pfandText ? ' ' + p.pfandText : ''), qty: 1, unit: p.pfand, total: p.pfand, vat: p.vat, sku: p.id + ':pfand', kind: 'pfand' });
     if (p.tags.includes('alkohol') && !this.idCheckDone) {

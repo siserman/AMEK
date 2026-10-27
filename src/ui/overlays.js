@@ -1,6 +1,8 @@
 // Full-screen panels: start, pause, cart contents, card terminal & cash,
 // the Kassenbon, and the end of the trip.
 import { euro, kg, el } from '../util.js';
+import { ean13Svg, checkDigit } from '../barcode.js';
+import qrcode from '../../vendor/qrcode.js';
 
 const $ = (id) => document.getElementById(id);
 const DENOMS = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
@@ -253,6 +255,7 @@ export class Overlays {
   // --- receipt ------------------------------------------------------------------------
   showReceipt(r) {
     $('receipt-paper').textContent = formatReceipt(r, this.data.meta);
+    $('receipt-codes').innerHTML = receiptCodes(r);
     this.lastReceipt = r;
     this.open('receipt');
   }
@@ -307,6 +310,8 @@ export function formatReceipt(r, meta) {
       out.push(l.name);
       out.push(line(`  ${l.qty} x ${euro(l.unit)}`, euro(l.total), code));
     } else out.push(line(l.name, euro(l.total), code));
+    // the article's EAN under it, and the short code for loose and bakery goods
+    if (l.gtin) out.push(`  EAN ${l.gtin}` + (l.plu ? `  PLU ${l.plu}` : ''));
   }
   out.push('-'.repeat(W));
   out.push(line('zu zahlen', euro(r.total)));
@@ -342,6 +347,43 @@ export function formatReceipt(r, meta) {
   out.push(`TSE-Seriennr.  7f3a92c1e0d4b5a6`);
   out.push('', center('Vielen Dank für Ihren Einkauf!'), center('Bis bald bei AMEK.'));
   return out.join('\n');
+}
+
+// Under the text: a barcode with till, receipt number and date (scanned for
+// returns), and the TSE check code German receipts carry since 2020, in the
+// DSFinV-K layout. The signature is made up: there is no real TSE in a game.
+export function receiptCodes(r) {
+  const z = (n, w) => String(n).padStart(w, '0');
+  const d = r.date;
+  const body = `29${z(r.kasse, 2)}${z(r.bon % 10000, 4)}${z(d.getDate(), 2)}${z(d.getMonth() + 1, 2)}`;
+  const bon = body + checkDigit(body);
+  const ink = '#222', paper = '#f7f2e6';
+  let qr = '';
+  try {
+    const q = qrcode(0, 'L');
+    q.addData(tseCode(r));
+    q.make();
+    qr = q.createSvgTag({ cellSize: 2, margin: 0, scalable: true, alt: { text: 'TSE-Prüfcode', id: 'tse-qr' } }).replace(/fill="black"/, `fill="${ink}"`).replace(/fill="white"/, `fill="${paper}"`);
+  } catch {
+    // a code too long for a QR symbol: leave it off rather than break the receipt
+  }
+  return (
+    `<figure class="code-bon">${ean13Svg(bon, { module: 2, height: 44, ink, paper })}<figcaption>Bon-Code für Umtausch und Rückgabe</figcaption></figure>` +
+    (qr ? `<figure class="code-tse">${qr}<figcaption>TSE-Prüfcode</figcaption></figure>` : '')
+  );
+}
+
+// V0;Kasse;Prozesstyp;Prozessdaten;Transaktion;Signaturzähler;Start;Ende;Algorithmus;Zeitformat;Signatur;Schlüssel
+function tseCode(r) {
+  const two = (c) => (c / 100).toFixed(2);
+  const gross = { 19: 0, 7: 0 };
+  for (const v of r.vat) gross[v.rate] = v.gross;
+  const pay = r.payment.method === 'card' ? `${two(r.payment.amount)}:Unbar` : `${two(r.total)}:Bar`;
+  const utc = (t) => t.toISOString().replace(/\.\d+Z$/, '.000Z');
+  // deterministic stand-ins for the ECDSA signature and public key
+  let seed = r.tse;
+  const bytes = (n) => btoa(String.fromCharCode(...Array.from({ length: n }, () => ((seed = (seed * 1103515245 + 12345) >>> 0) >>> 16) & 255)));
+  return ['V0', `AMEK-0815-K${r.kasse}`, 'Kassenbeleg-V1', `Beleg^${two(gross[19])}_${two(gross[7])}_0.00_0.00_0.00^${pay}`, r.tse, r.tse * 2 + 1, utc(r.tseStart), utc(r.date), 'ecdsa-plain-SHA384', 'unixTime', bytes(96), bytes(97)].join(';');
 }
 
 function iso(d) {

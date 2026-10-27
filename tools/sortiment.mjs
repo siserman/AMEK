@@ -38,7 +38,7 @@ const page = {
 };
 // the barcode helpers and the QR encoder go inline, so the page works on its own
 const plain = (code) => code.replace(/^export default .*$/gm, '').replace(/^export /gm, '');
-const lib = [read('vendor/qrcode.mjs'), read('src/barcode.js')].map(plain).join('\n');
+const lib = [read('vendor/qrcode.js'), read('src/barcode.js')].map(plain).join('\n');
 const html = read('tools/sortiment.page.html')
   .replace('/*DATA*/', () => JSON.stringify(page).replace(/</g, '\\u003c'))
   .replace('/*LIB*/', () => lib);
